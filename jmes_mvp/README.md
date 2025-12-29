@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="data/logo/PJ-SEKHMET.jpeg" alt="PJ SEKHMET Logo" width="300"/>
+</div>
+
 # JMES Synthetic Workforce Simulation
 
 A synthetic Defence workforce data generator for JMES (Joint Medical Employment Standard) prediction modeling. Simulates 100,000 tri-service personnel over 5-10 years with realistic turnover, injuries, and medical status transitions.
