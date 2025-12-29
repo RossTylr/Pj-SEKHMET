@@ -1,0 +1,705 @@
+# ============================================================
+# JMES ENHANCED SIMULATION CONFIGURATION
+# Version: 2.0.0 - Full Contingency Modelling
+# 150,000 personnel over 10 years (120 months)
+# ============================================================
+
+# ===========================================
+# CORE POPULATION PARAMETERS
+# ===========================================
+population:
+  initial_size: 150000
+  simulation_months: 120  # 10 years
+  chunk_size: 10000  # For memory-efficient processing
+
+# ===========================================
+# TURNOVER MODEL (10% Annual)
+# ===========================================
+turnover:
+  annual_rate: 0.10
+  monthly_rate: 0.00877  # 1 - (1 - 0.10)^(1/12)
+  
+  # LoS-weighted outflow - CONTINGENT on career stage
+  los_weights:
+    "0-2": 1.6    # Very high early attrition
+    "3-4": 1.2    # High early-mid attrition
+    "5-8": 0.85   # Settling in
+    "9-12": 0.75  # Career committed
+    "13-18": 0.70 # Senior stable
+    "19+": 0.90   # Pre-retirement uptick
+  
+  # Age-weighted outflow - CONTINGENT on life stage
+  age_weights:
+    "18-22": 1.4  # Young, exploring options
+    "23-27": 1.1  # Still mobile
+    "28-35": 0.8  # Family formation, stability
+    "36-45": 0.75 # Peak stability
+    "46-50": 0.9  # Pre-retirement
+    "51-55": 1.5  # Retirement eligible
+  
+  # Gender-specific modifiers
+  gender_weights:
+    Male: 1.0
+    Female: 1.05  # Slightly higher due to family reasons
+  
+  # JMES-contingent outflow
+  jmes_weights:
+    MFD: 1.0
+    MLD: 1.3   # Limited deployability increases exit
+    MND: 2.5   # Non-deployable much higher exit
+
+# ===========================================
+# TRI-SERVICE DISTRIBUTION
+# ===========================================
+service_mix:
+  Army: 0.58
+  RN: 0.22    # Includes Royal Marines
+  RAF: 0.20
+
+# Service-specific characteristics (CONTINGENCY)
+service_profiles:
+  Army:
+    female_rate_modifier: 0.85  # Lower female representation
+    injury_rate_modifier: 1.2   # Higher injury rate
+    deployment_rate_modifier: 1.15
+    high_risk_trade_proportion: 0.25
+  RN:
+    female_rate_modifier: 1.0
+    injury_rate_modifier: 1.0
+    deployment_rate_modifier: 1.1
+    high_risk_trade_proportion: 0.20
+  RAF:
+    female_rate_modifier: 1.15  # Higher female representation
+    injury_rate_modifier: 0.85  # Lower injury rate
+    deployment_rate_modifier: 0.75
+    high_risk_trade_proportion: 0.12
+
+# ===========================================
+# GENDER MODEL
+# ===========================================
+gender:
+  overall_female_rate: 0.165  # 16.5% across tri-service
+  
+  # Trade-specific rates (CONTINGENT on trade choice)
+  by_trade:
+    CMT: 0.28
+    Paramedic: 0.25
+    Nurse: 0.72
+    AHP: 0.45
+    ODP: 0.35
+    MedAdmin: 0.55
+    Dental: 0.40
+    Pharmacy: 0.52
+    Mental_Health: 0.48
+    Radiology: 0.38
+    Infantry: 0.02
+    Armour: 0.03
+    Artillery: 0.04
+    Engineer: 0.08
+    Signals: 0.12
+    Logistics: 0.18
+    Intelligence: 0.25
+    Other: 0.14
+  
+  # Rank attainment modifiers (CONTINGENT)
+  rank_progression_modifier:
+    Male: 1.0
+    Female: 0.92  # Historical gap (improving)
+  
+  # Pregnancy impact on career (handled separately)
+  maternity_leave_months: 9
+  career_break_probability: 0.15  # Leave service after pregnancy
+
+# ===========================================
+# ETHNICITY MODEL
+# ===========================================
+ethnicity:
+  distribution:
+    White_British: 0.82
+    White_Other: 0.04
+    Black_Caribbean: 0.025
+    Black_African: 0.02
+    Asian_Indian: 0.015
+    Asian_Pakistani: 0.012
+    Asian_Bangladeshi: 0.005
+    Asian_Chinese: 0.003
+    Asian_Other: 0.01
+    Mixed_White_Black: 0.015
+    Mixed_White_Asian: 0.01
+    Mixed_Other: 0.008
+    Arab: 0.005
+    Other: 0.012
+  
+  # Service-specific variations (CONTINGENT)
+  service_modifiers:
+    Army:
+      White_British: 0.98
+      Black_Caribbean: 1.3
+      Black_African: 1.2
+      Asian_Indian: 0.7
+    RN:
+      White_British: 1.02
+      Black_Caribbean: 0.8
+      Asian_Indian: 0.9
+    RAF:
+      White_British: 1.0
+      Asian_Indian: 1.1
+      Asian_Chinese: 1.3
+  
+  # Rank progression modifiers (historical patterns)
+  rank_progression_modifier:
+    White_British: 1.0
+    White_Other: 0.98
+    Black_Caribbean: 0.92
+    Black_African: 0.90
+    Asian_Indian: 0.95
+    Asian_Pakistani: 0.93
+    default: 0.94
+  
+  # Retention modifiers
+  retention_modifier:
+    White_British: 1.0
+    Black_Caribbean: 0.92
+    Black_African: 0.90
+    Asian_Indian: 0.96
+    default: 0.95
+
+# ===========================================
+# AGE MODEL
+# ===========================================
+age:
+  # Overall distribution
+  min: 18
+  max: 55
+  
+  # Service-specific age profiles
+  by_service:
+    Army:
+      mean: 31.5
+      std: 8.5
+    RN:
+      mean: 33.0
+      std: 8.0
+    RAF:
+      mean: 34.0
+      std: 7.5
+  
+  # New joiner age distribution
+  inflow:
+    min: 18
+    max: 35
+    mean: 21.5
+    std: 3.8
+    
+    # Officer vs Enlisted entry ages
+    officer_entry:
+      mean: 23.5
+      std: 2.5
+      min: 21
+      max: 32
+    enlisted_entry:
+      mean: 20.5
+      std: 2.8
+      min: 18
+      max: 33
+  
+  # Age-contingent health risk
+  health_risk_by_age:
+    "18-25": {base_injury_mod: 1.3, recovery_mod: 1.2, chronic_risk: 0.02}
+    "26-35": {base_injury_mod: 1.0, recovery_mod: 1.0, chronic_risk: 0.05}
+    "36-45": {base_injury_mod: 1.1, recovery_mod: 0.85, chronic_risk: 0.12}
+    "46-55": {base_injury_mod: 1.25, recovery_mod: 0.70, chronic_risk: 0.22}
+
+# ===========================================
+# LENGTH OF SERVICE MODEL
+# ===========================================
+length_of_service:
+  # Distribution bands
+  bands:
+    "0-2": 0.22    # New joiners, training
+    "3-4": 0.18    # Early career
+    "5-8": 0.20    # Developing
+    "9-12": 0.15   # Experienced
+    "13-18": 0.14  # Senior
+    "19-25": 0.08  # Very senior
+    "26+": 0.03    # Long service
+  
+  max_years: 37  # Rare but possible
+  
+  # LoS affects injury risk (CONTINGENT)
+  injury_risk_by_los:
+    "0-2": 1.5    # Learning, higher risk
+    "3-4": 1.2    # Still developing
+    "5-8": 0.9    # Experienced
+    "9-12": 0.85  # Peak competence
+    "13+": 1.0    # Cumulative wear
+
+# ===========================================
+# RANK MODEL
+# ===========================================
+rank:
+  bands:
+    # Enlisted
+    OR1: 0.00       # Private (in training)
+    OR2: 0.18       # Private
+    OR3: 0.12       # Lance Corporal
+    OR4: 0.15       # Corporal
+    OR5: 0.10       # Sergeant
+    OR6: 0.08       # Staff Sergeant
+    OR7: 0.06       # Warrant Officer Class 2
+    OR8: 0.03       # Warrant Officer Class 1
+    OR9: 0.02       # Conductor/RSM
+    # Officers
+    OF1: 0.08       # Lieutenant / Sub-Lieutenant
+    OF2: 0.07       # Captain / Lieutenant
+    OF3: 0.05       # Major / Lt Commander
+    OF4: 0.03       # Lt Colonel / Commander
+    OF5: 0.02       # Colonel / Captain
+    OF6: 0.008      # Brigadier / Commodore
+    OF7_plus: 0.002 # General officers
+  
+  # LoS requirements for rank (CONTINGENT)
+  min_los_for_rank:
+    OR2: 0
+    OR3: 2
+    OR4: 4
+    OR5: 7
+    OR6: 10
+    OR7: 14
+    OR8: 18
+    OR9: 22
+    OF1: 0
+    OF2: 3
+    OF3: 8
+    OF4: 14
+    OF5: 20
+    OF6: 24
+    OF7_plus: 28
+  
+  # Promotion probability modifiers
+  promotion_modifiers:
+    performance_top_20pct: 1.4
+    performance_bottom_20pct: 0.5
+    injury_history: 0.85
+    deployment_experience: 1.15
+    education_degree: 1.1
+
+# ===========================================
+# TRADE / OCCUPATION MODEL
+# ===========================================
+trades:
+  # Medical and clinical
+  CMT: 0.08
+  Paramedic: 0.04
+  Nurse: 0.06
+  AHP: 0.05
+  ODP: 0.03
+  MedAdmin: 0.04
+  Dental: 0.02
+  Pharmacy: 0.015
+  Mental_Health: 0.02
+  Radiology: 0.015
+  
+  # Combat and operational
+  Infantry: 0.12
+  Armour: 0.04
+  Artillery: 0.05
+  Engineer: 0.06
+  
+  # Technical and support
+  Signals: 0.05
+  Logistics: 0.08
+  Intelligence: 0.04
+  
+  # Other
+  Other: 0.165
+  
+  # Trade risk profiles (CONTINGENT)
+  risk_profiles:
+    CMT:
+      injury_multiplier: 1.8
+      deployment_exposure: 1.5
+      mh_risk_multiplier: 1.3
+      physical_demands: "high"
+    Paramedic:
+      injury_multiplier: 1.6
+      deployment_exposure: 1.4
+      mh_risk_multiplier: 1.4
+      physical_demands: "high"
+    Nurse:
+      injury_multiplier: 1.0
+      deployment_exposure: 1.2
+      mh_risk_multiplier: 1.5
+      physical_demands: "medium"
+    Infantry:
+      injury_multiplier: 2.2
+      deployment_exposure: 1.8
+      mh_risk_multiplier: 1.6
+      physical_demands: "very_high"
+    Armour:
+      injury_multiplier: 1.8
+      deployment_exposure: 1.6
+      mh_risk_multiplier: 1.3
+      physical_demands: "high"
+    Artillery:
+      injury_multiplier: 1.5
+      deployment_exposure: 1.4
+      mh_risk_multiplier: 1.2
+      physical_demands: "high"
+    Engineer:
+      injury_multiplier: 1.7
+      deployment_exposure: 1.5
+      mh_risk_multiplier: 1.2
+      physical_demands: "high"
+    Intelligence:
+      injury_multiplier: 0.6
+      deployment_exposure: 0.8
+      mh_risk_multiplier: 1.4
+      physical_demands: "low"
+    Logistics:
+      injury_multiplier: 1.1
+      deployment_exposure: 1.0
+      mh_risk_multiplier: 0.9
+      physical_demands: "medium"
+    default:
+      injury_multiplier: 1.0
+      deployment_exposure: 1.0
+      mh_risk_multiplier: 1.0
+      physical_demands: "medium"
+
+# ===========================================
+# JMES (MEDICAL STATUS) MODEL
+# ===========================================
+jmes:
+  baseline_distribution:
+    MFD: 0.84
+    MLD: 0.13
+    MND: 0.03
+  
+  new_joiner_distribution:
+    MFD: 0.96
+    MLD: 0.035
+    MND: 0.005
+  
+  # Base monthly transition probabilities
+  base_transitions:
+    MFD_to_MLD: 0.007
+    MFD_to_MND: 0.0008
+    MLD_to_MND: 0.012
+    MLD_to_MFD: 0.022
+    MND_to_MLD: 0.008
+    MND_to_MFD: 0.0015
+  
+  # CONTINGENT modifiers
+  transition_modifiers:
+    # Age effects (older = harder to recover)
+    age:
+      "18-30": {deterioration: 0.85, recovery: 1.20}
+      "31-40": {deterioration: 1.00, recovery: 1.00}
+      "41-50": {deterioration: 1.25, recovery: 0.80}
+      "51-55": {deterioration: 1.50, recovery: 0.60}
+    
+    # Injury history effects
+    injury_history:
+      no_injuries: {deterioration: 1.0, recovery: 1.0}
+      "1-2_injuries": {deterioration: 1.2, recovery: 0.95}
+      "3-5_injuries": {deterioration: 1.5, recovery: 0.85}
+      "6+_injuries": {deterioration: 2.0, recovery: 0.70}
+    
+    # Trade effects
+    high_physical_trade: {deterioration: 1.3, recovery: 0.9}
+    
+    # Current pregnancy
+    pregnant: {deterioration: 0.5, recovery: 0.5}  # Protected status
+
+# ===========================================
+# INJURY MODEL (Enhanced)
+# ===========================================
+injuries:
+  # Base monthly rates
+  baseline_rates:
+    mski: 0.018          # Musculoskeletal
+    mental_health: 0.008 # MH conditions
+    acute_medical: 0.005 # Acute illness
+    other: 0.004         # Other injuries
+  
+  # Injury types and severity distribution
+  types:
+    MSKI_minor:
+      probability: 0.35
+      severity_range: [1, 3]
+      recovery_days: [5, 20]
+      recurrence_risk: 0.15
+      jmes_impact: 0.02  # Prob of JMES downgrade
+    MSKI_moderate:
+      probability: 0.25
+      severity_range: [4, 6]
+      recovery_days: [20, 60]
+      recurrence_risk: 0.25
+      jmes_impact: 0.08
+    MSKI_major:
+      probability: 0.10
+      severity_range: [7, 9]
+      recovery_days: [60, 180]
+      recurrence_risk: 0.35
+      jmes_impact: 0.25
+    MSKI_severe:
+      probability: 0.03
+      severity_range: [9, 10]
+      recovery_days: [180, 365]
+      recurrence_risk: 0.50
+      jmes_impact: 0.60
+    MH_mild:
+      probability: 0.12
+      severity_range: [2, 4]
+      recovery_days: [14, 45]
+      recurrence_risk: 0.30
+      jmes_impact: 0.05
+    MH_moderate:
+      probability: 0.08
+      severity_range: [5, 7]
+      recovery_days: [45, 120]
+      recurrence_risk: 0.45
+      jmes_impact: 0.15
+    MH_severe:
+      probability: 0.04
+      severity_range: [8, 10]
+      recovery_days: [120, 365]
+      recurrence_risk: 0.55
+      jmes_impact: 0.40
+    Other:
+      probability: 0.03
+      severity_range: [1, 5]
+      recovery_days: [7, 30]
+      recurrence_risk: 0.10
+      jmes_impact: 0.03
+  
+  # MULTIPLE INJURY TRACKING
+  cumulative_injury_effects:
+    injury_count_thresholds: [1, 3, 5, 8, 12]
+    vulnerability_multipliers: [1.0, 1.15, 1.35, 1.60, 2.0, 2.5]
+    chronic_condition_risk: [0.0, 0.02, 0.05, 0.10, 0.18, 0.30]
+    medical_discharge_risk: [0.0, 0.01, 0.03, 0.08, 0.15, 0.25]
+  
+  # Body region tracking (for multiple injury logic)
+  body_regions:
+    lower_back: 0.22
+    knee: 0.18
+    ankle_foot: 0.12
+    shoulder: 0.11
+    neck: 0.08
+    hip: 0.07
+    wrist_hand: 0.06
+    upper_back: 0.05
+    head: 0.04
+    other: 0.07
+  
+  # Same-region re-injury multiplier
+  same_region_reinjury_multiplier: 2.5
+  
+  # Context multipliers
+  deployment_multiplier: 1.6
+  high_risk_training_multiplier: 2.8
+  exercise_multiplier: 1.4  # Major exercises
+  post_deployment_mh_multiplier: 1.8  # 6 months after deployment
+
+# ===========================================
+# PREGNANCY MODEL (Enhanced)
+# ===========================================
+pregnancy:
+  # Base rates by age band
+  conception_rates_by_age:
+    "18-24": 0.065
+    "25-29": 0.072
+    "30-34": 0.058
+    "35-39": 0.035
+    "40-44": 0.012
+    "45+": 0.002
+  
+  # Monthly rate derived from annual
+  monthly_rate_multiplier: 0.0833  # 1/12
+  
+  # Duration and states
+  duration:
+    trimester_1_months: 3
+    trimester_2_months: 3
+    trimester_3_months: 3
+    maternity_leave_months: 6
+    postpartum_recovery_months: 3
+  
+  # Complications (CONTINGENT on age, history)
+  complications:
+    base_rate: 0.12
+    age_modifier:
+      "18-29": 0.8
+      "30-34": 1.0
+      "35-39": 1.4
+      "40+": 2.0
+    previous_pregnancy_modifier: 0.9  # Experience helps
+  
+  # Career impact
+  career_impact:
+    promotion_delay_months: 12
+    deployment_exemption_months: 18
+    training_exemption_months: 12
+    career_break_probability: 0.12
+    reduced_hours_probability: 0.25
+  
+  # Multiple pregnancies tracking
+  max_tracked_pregnancies: 5
+  inter_pregnancy_interval_months: 18  # Minimum recommended
+
+# ===========================================
+# DEPLOYMENT MODEL
+# ===========================================
+deployment:
+  baseline_monthly_rate: 0.065
+  
+  # Deployment types
+  types:
+    operational_high_intensity:
+      probability: 0.15
+      duration_months: [4, 9]
+      injury_multiplier: 2.0
+      mh_risk_multiplier: 1.8
+      jmes_impact: 0.05
+    operational_low_intensity:
+      probability: 0.35
+      duration_months: [3, 6]
+      injury_multiplier: 1.3
+      mh_risk_multiplier: 1.2
+      jmes_impact: 0.02
+    training_overseas:
+      probability: 0.25
+      duration_months: [1, 3]
+      injury_multiplier: 1.4
+      mh_risk_multiplier: 0.9
+      jmes_impact: 0.01
+    humanitarian:
+      probability: 0.15
+      duration_months: [2, 6]
+      injury_multiplier: 1.1
+      mh_risk_multiplier: 1.3
+      jmes_impact: 0.01
+    other:
+      probability: 0.10
+      duration_months: [1, 4]
+      injury_multiplier: 1.0
+      mh_risk_multiplier: 1.0
+      jmes_impact: 0.01
+  
+  # Service-specific rates
+  service_rates:
+    Army: 1.2
+    RN: 1.1
+    RAF: 0.75
+  
+  # Post-deployment effects (CONTINGENT)
+  post_deployment:
+    mh_vulnerability_months: 6
+    mh_vulnerability_multiplier: 1.5
+    reintegration_support_effect: 0.7  # Reduces risk if provided
+
+# ===========================================
+# TRAINING MODEL
+# ===========================================
+training:
+  monthly_rate: 0.12
+  
+  types:
+    basic_training:
+      probability: 0.10
+      duration_weeks: [8, 16]
+      injury_multiplier: 2.5
+      applies_to_los: [0, 1]
+    specialist_training:
+      probability: 0.25
+      duration_weeks: [4, 12]
+      injury_multiplier: 1.5
+    career_course:
+      probability: 0.20
+      duration_weeks: [2, 8]
+      injury_multiplier: 1.2
+    exercise_major:
+      probability: 0.20
+      duration_weeks: [2, 6]
+      injury_multiplier: 1.8
+    exercise_minor:
+      probability: 0.15
+      duration_weeks: [1, 2]
+      injury_multiplier: 1.3
+    adventure_training:
+      probability: 0.10
+      duration_weeks: [1, 2]
+      injury_multiplier: 1.6
+
+# ===========================================
+# ENGAGEMENT / CONTRACT TYPES
+# ===========================================
+engagement:
+  types:
+    Open_Engagement:
+      probability: 0.35
+      min_years: 4
+      max_years: 22
+      notice_period_months: 12
+    Fixed_Commission:
+      probability: 0.15
+      fixed_years: [3, 5, 8]
+      extension_probability: 0.6
+    Short_Career:
+      probability: 0.20
+      min_years: 4
+      max_years: 8
+    Full_Career:
+      probability: 0.25
+      min_years: 16
+      max_years: 22
+    Reserve:
+      probability: 0.05
+      commitment_days_per_year: [27, 40]
+
+# ===========================================
+# ENVIRONMENT / UNIT FACTORS
+# ===========================================
+unit_environment:
+  types:
+    standard:
+      probability: 0.65
+      injury_modifier: 1.0
+      deployment_rate_modifier: 1.0
+    high_readiness:
+      probability: 0.15
+      injury_modifier: 1.25
+      deployment_rate_modifier: 1.5
+    training_establishment:
+      probability: 0.10
+      injury_modifier: 1.4
+      deployment_rate_modifier: 0.3
+    headquarters:
+      probability: 0.07
+      injury_modifier: 0.6
+      deployment_rate_modifier: 0.4
+    remote_harsh:
+      probability: 0.03
+      injury_modifier: 1.3
+      deployment_rate_modifier: 0.8
+
+# ===========================================
+# VALIDATION THRESHOLDS
+# ===========================================
+validation:
+  turnover_tolerance: 0.015
+  population_stability: 0.03
+  jmes_mfd_floor: 0.78
+  injury_rate_ceiling: 0.08
+  gender_ratio_tolerance: 0.02
+  ethnicity_tolerance: 0.03
+  
+  # Distribution checks
+  expected_distributions:
+    army_proportion: [0.55, 0.62]
+    female_proportion: [0.14, 0.19]
+    mfd_proportion: [0.78, 0.88]
+    mean_age: [30, 36]
+    mean_los: [6, 10]

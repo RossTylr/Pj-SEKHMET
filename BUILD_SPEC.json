@@ -1,0 +1,348 @@
+{
+  "$schema": "jmes-build-spec-v1",
+  "meta": {
+    "project": "JMES Synthetic Workforce Simulation",
+    "version": "0.1.0",
+    "purpose": "Cursor/Claude build instructions with self-verification",
+    "created": "2024-12-29"
+  },
+
+  "project_structure": {
+    "root": "jmes_mvp",
+    "directories": [
+      "configs",
+      "src", 
+      "tests",
+      "data"
+    ],
+    "files": {
+      "configs/simulation_config.yaml": "Configuration parameters",
+      "src/__init__.py": "Package init",
+      "src/models.py": "Data models with enums",
+      "src/generator.py": "Synthetic data engine",
+      "src/validation.py": "Chain-of-Verification",
+      "src/app.py": "Streamlit dashboard",
+      "tests/test_generator.py": "Unit tests",
+      "requirements.txt": "Dependencies"
+    }
+  },
+
+  "enumerations": {
+    "ServiceBranch": ["Army", "RN", "RAF"],
+    "Gender": ["Male", "Female"],
+    "RankBand": ["OR2-OR4", "OR5-OR7", "OR8-OR9", "OF1-OF3", "OF4-OF5"],
+    "Trade": ["CMT", "Paramedic", "AHP", "ODP", "Other"],
+    "JMESStatus": ["MFD", "MLD", "MND"],
+    "InjuryType": ["None", "MSKI-minor", "MSKI-major", "MH-episode", "Other"],
+    "DeploymentStatus": ["Not_deployed", "Low_tempo", "High_tempo"],
+    "TrainingPhase": ["None", "Low_risk", "High_risk"],
+    "PregnancyStatus": ["Not_pregnant", "T1", "T2", "T3", "Postpartum"],
+    "EngagementType": ["PC", "IC", "FE", "UCM-H"],
+    "UnitEnvType": ["Standard", "High-Risk", "Hot/Cold"],
+    "HealthRisk": ["Low", "Medium", "High"],
+    "OutflowReason": ["Premature_voluntary", "End_of_engagement", "Medical_discharge", "Normal_termination", "Administrative"]
+  },
+
+  "table_schemas": {
+    "personnel_master": {
+      "description": "Table A - One row per synthetic individual",
+      "row_count": 100000,
+      "columns": {
+        "person_id": {"type": "string", "format": "uuid", "nullable": false},
+        "service_branch": {"type": "category", "values": "ServiceBranch", "nullable": false},
+        "regular_reserve": {"type": "category", "values": ["Regular", "Reserve"], "nullable": false},
+        "age_start": {"type": "int32", "min": 18, "max": 55, "nullable": false},
+        "gender": {"type": "category", "values": "Gender", "nullable": false},
+        "rank_band": {"type": "category", "values": "RankBand", "nullable": false},
+        "trade": {"type": "category", "values": "Trade", "nullable": false},
+        "length_of_service_start": {"type": "int32", "min": 0, "max": 30, "nullable": false},
+        "engagement_type": {"type": "category", "values": "EngagementType", "nullable": false},
+        "baseline_jmes": {"type": "category", "values": "JMESStatus", "nullable": false},
+        "baseline_health_risk": {"type": "category", "values": "HealthRisk", "nullable": false},
+        "unit_env_type": {"type": "category", "values": "UnitEnvType", "nullable": false},
+        "initial_deployability": {"type": "bool", "nullable": false},
+        "created_at": {"type": "datetime", "nullable": false}
+      },
+      "constraints": [
+        "length_of_service_start <= age_start - 18",
+        "initial_deployability == (baseline_jmes != 'MND')"
+      ]
+    },
+    "person_month": {
+      "description": "Table B - One row per individual per month",
+      "row_count_estimate": "6-12 million for 60-120 months",
+      "columns": {
+        "person_id": {"type": "string", "nullable": false},
+        "month": {"type": "int32", "min": 1, "nullable": false},
+        "age": {"type": "float32", "min": 18.0, "nullable": false},
+        "jmes_current": {"type": "category", "values": "JMESStatus", "nullable": false},
+        "jmes_event_this_month": {"type": "int8", "values": [0, 1], "nullable": false},
+        "injury_type": {"type": "category", "values": "InjuryType", "nullable": false},
+        "injury_severity_score": {"type": "int16", "min": 0, "max": 10, "nullable": false},
+        "deployment_status": {"type": "category", "values": "DeploymentStatus", "nullable": false},
+        "training_phase": {"type": "category", "values": "TrainingPhase", "nullable": false},
+        "pregnancy_status": {"type": "category", "values": "PregnancyStatus", "nullable": false},
+        "sick_days": {"type": "int16", "min": 0, "max": 30, "nullable": false},
+        "outflow_flag": {"type": "int8", "values": [0, 1], "nullable": false},
+        "outflow_reason": {"type": "category", "values": "OutflowReason", "nullable": true},
+        "inflow_flag": {"type": "int8", "values": [0, 1], "nullable": false},
+        "survival_time": {"type": "float32", "min": 0.0, "nullable": false},
+        "censor_flag": {"type": "int8", "values": [0, 1], "nullable": false}
+      },
+      "constraints": [
+        "pregnancy_status != 'Not_pregnant' implies gender == 'Female'",
+        "outflow_flag == 0 implies outflow_reason is null",
+        "age increments by 1/12 per month"
+      ]
+    }
+  },
+
+  "probability_parameters": {
+    "population": {
+      "initial_size": 100000,
+      "simulation_months": 60
+    },
+    "turnover": {
+      "annual_rate": 0.10,
+      "monthly_rate": 0.00877,
+      "formula": "monthly = 1 - (1 - annual)^(1/12)",
+      "los_weights": {
+        "0-4_years": 1.3,
+        "5-12_years": 0.9,
+        "13+_years": 0.8
+      }
+    },
+    "service_mix": {
+      "Army": 0.60,
+      "RN": 0.20,
+      "RAF": 0.20,
+      "sum_check": 1.0
+    },
+    "gender": {
+      "overall_female_rate": 0.175,
+      "by_trade": {
+        "CMT": 0.25,
+        "Paramedic": 0.22,
+        "AHP": 0.35,
+        "ODP": 0.30,
+        "Other": 0.12
+      }
+    },
+    "age": {
+      "existing_cohort": {"mean": 32.5, "std": 8.0, "min": 18, "max": 55},
+      "new_joiners": {"mean": 22, "std": 4.0, "min": 18, "max": 35}
+    },
+    "jmes": {
+      "baseline": {"MFD": 0.85, "MLD": 0.12, "MND": 0.03},
+      "new_joiner_baseline": {"MFD": 0.95, "MLD": 0.04, "MND": 0.01},
+      "monthly_transitions": {
+        "MFD_to_MLD": 0.008,
+        "MFD_to_MND": 0.001,
+        "MLD_to_MND": 0.015,
+        "MLD_to_MFD": 0.025,
+        "MND_to_MLD": 0.010,
+        "MND_to_MFD": 0.002
+      }
+    },
+    "injuries": {
+      "baseline_monthly_mski": 0.02,
+      "trade_multipliers": {
+        "CMT": 1.8,
+        "Paramedic": 1.6,
+        "AHP": 1.0,
+        "ODP": 1.2,
+        "Other": 1.3
+      },
+      "type_distribution": {
+        "MSKI-minor": 0.50,
+        "MSKI-major": 0.25,
+        "MH-episode": 0.15,
+        "Other": 0.10
+      }
+    },
+    "pregnancy": {
+      "monthly_conception_rate": 0.0055,
+      "duration_months": 9,
+      "postpartum_months": 4,
+      "applicable_ages": [18, 45]
+    }
+  },
+
+  "verification_rules": {
+    "self_checks": [
+      {
+        "id": "SC1",
+        "name": "Project Structure",
+        "code": "import os; assert all(os.path.isdir(d) for d in ['configs', 'src', 'tests', 'data'])",
+        "expected": "All directories exist"
+      },
+      {
+        "id": "SC2", 
+        "name": "Config Validity",
+        "code": "import yaml; cfg = yaml.safe_load(open('configs/simulation_config.yaml')); assert abs(sum(cfg['service_mix'].values()) - 1.0) < 0.01",
+        "expected": "Service mix sums to 1.0"
+      },
+      {
+        "id": "SC3",
+        "name": "Model Creation",
+        "code": "from src.models import PersonnelMaster, Gender; p = PersonnelMaster(age_start=30); assert p.to_dict()['age_start'] == 30",
+        "expected": "PersonnelMaster creates and serializes"
+      },
+      {
+        "id": "SC4",
+        "name": "Model Validation",
+        "code": "from src.models import PersonnelMaster; failed = False; exec('try:\\n  PersonnelMaster(age_start=15)\\nexcept AssertionError:\\n  failed = True'); assert failed",
+        "expected": "Invalid age raises AssertionError"
+      },
+      {
+        "id": "SC5",
+        "name": "Generator Runs",
+        "code": "from src.generator import SyntheticDataGenerator; g = SyntheticDataGenerator('configs/simulation_config.yaml', 42); g.config['population']['initial_size'] = 100; g.config['population']['simulation_months'] = 3; m, d = g.run_simulation(); assert len(m) >= 100",
+        "expected": "Generator produces data"
+      },
+      {
+        "id": "SC6",
+        "name": "Distribution Check",
+        "code": "army_rate = (master_df['service_branch'] == 'Army').mean(); assert 0.55 <= army_rate <= 0.65",
+        "expected": "Army ~60%"
+      }
+    ],
+    "integration_tests": [
+      {
+        "id": "IT1",
+        "name": "End-to-end generation",
+        "steps": [
+          "Initialize generator with config",
+          "Set population=1000, months=12",
+          "Run simulation",
+          "Verify master table >= 1000 rows",
+          "Verify month table >= 10000 rows",
+          "Verify all required columns present"
+        ]
+      },
+      {
+        "id": "IT2",
+        "name": "Distribution validation",
+        "tolerances": {
+          "service_mix": 0.05,
+          "gender_ratio": 0.05,
+          "jmes_mfd_baseline": 0.05,
+          "turnover_rate": 0.02
+        }
+      },
+      {
+        "id": "IT3",
+        "name": "Business rule validation",
+        "rules": [
+          "All age_start >= 18",
+          "All age_start <= 55",
+          "All length_of_service_start <= age_start - 18",
+          "All pregnancy_status != 'Not_pregnant' have gender == 'Female'"
+        ]
+      }
+    ]
+  },
+
+  "implementation_warnings": [
+    {
+      "id": "W1",
+      "severity": "CRITICAL",
+      "issue": "numpy.str_ from rng.choice on Enum list",
+      "symptom": "AttributeError: 'numpy.str_' object has no attribute 'value'",
+      "solution": "Use index-based selection: idx = rng.choice(len(options), p=probs); result = options[idx]"
+    },
+    {
+      "id": "W2",
+      "severity": "CRITICAL", 
+      "issue": "rng.integers low >= high",
+      "symptom": "ValueError: low >= high",
+      "solution": "Always validate range before calling: if max_val > min_val: rng.integers(min_val, max_val)"
+    },
+    {
+      "id": "W3",
+      "severity": "HIGH",
+      "issue": "Memory explosion with large datasets",
+      "symptom": "MemoryError or system slowdown",
+      "solution": "Use categorical dtypes, process in chunks, avoid storing full enum objects"
+    },
+    {
+      "id": "W4",
+      "severity": "MEDIUM",
+      "issue": "Turnover rate drift",
+      "symptom": "Population grows/shrinks significantly",
+      "solution": "Balance inflow to match outflow each month, add noise ±5% not ±50%"
+    }
+  ],
+
+  "streamlit_components": {
+    "tabs": ["Overview", "JMES Monitoring", "Turnover", "Injuries", "Export"],
+    "session_state_keys": ["master_df", "month_df", "generator", "config"],
+    "required_functions": [
+      "render_sidebar",
+      "render_overview_tab",
+      "render_jmes_tab", 
+      "render_turnover_tab",
+      "render_injuries_tab",
+      "render_export_tab",
+      "generate_data",
+      "main"
+    ],
+    "plotly_charts": {
+      "overview": ["pie:service_branch", "histogram:age", "bar:trade", "bar:jmes"],
+      "jmes": ["area:jmes_over_time", "line:deterioration_events", "grouped_bar:jmes_by_service"],
+      "turnover": ["dual_line:inflow_outflow", "line:population", "pie:outflow_reasons"],
+      "injuries": ["line:monthly_injuries", "pie:injury_types", "bar:injury_rate_by_trade"]
+    }
+  },
+
+  "dependencies": {
+    "python": ">=3.10",
+    "packages": {
+      "numpy": ">=1.24.0",
+      "pandas": ">=2.0.0",
+      "pyyaml": ">=6.0",
+      "streamlit": ">=1.28.0",
+      "plotly": ">=5.18.0",
+      "pytest": ">=7.4.0"
+    }
+  },
+
+  "spiral_roadmap": {
+    "phase_1_mvp": {
+      "status": "current",
+      "deliverables": [
+        "Data models with validation",
+        "Config-driven generator",
+        "Basic Streamlit UI",
+        "Chain-of-Verification"
+      ]
+    },
+    "phase_2_enhanced": {
+      "status": "next",
+      "deliverables": [
+        "LoS-weighted outflow",
+        "Injury-JMES correlation",
+        "Deployment impact modelling",
+        "Performance optimization"
+      ]
+    },
+    "phase_3_modelling": {
+      "status": "planned",
+      "deliverables": [
+        "Feature engineering pipeline",
+        "Logistic regression baseline",
+        "Cox survival model",
+        "Model validation metrics"
+      ]
+    },
+    "phase_4_scenarios": {
+      "status": "planned",
+      "deliverables": [
+        "Counterfactual simulation",
+        "Policy lever testing",
+        "Interactive scenario builder",
+        "Sensitivity analysis"
+      ]
+    }
+  }
+}

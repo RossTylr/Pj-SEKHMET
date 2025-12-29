@@ -1,0 +1,16 @@
+# SEKHMET Recovery Predictor
+# Core dependencies
+
+numpy>=1.24.0
+pandas>=2.0.0
+streamlit>=1.28.0
+plotly>=5.18.0
+
+# Optional: Synthetic data generation
+pyyaml>=6.0
+
+# Optional: ML models (Phase 2)
+# scikit-learn>=1.3.0
+# lifelines>=0.27.0
+# xgboost>=2.0.0
+# shap>=0.43.0
