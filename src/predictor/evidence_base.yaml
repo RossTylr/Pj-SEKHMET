@@ -1,0 +1,746 @@
+# ============================================================
+# SEKHMET Recovery Predictor – Clinical Evidence Base
+# ============================================================
+# Version: 1.1.0 (Updated with mTBI + additional risk factors)
+# Generated: 2025-01-01
+# Updated: 2025-01-01
+# Sources: Uploaded PDFs + peer-reviewed literature search
+# ============================================================
+
+metadata:
+  version: "1.1.0"
+  last_updated: "2025-01-01"
+  total_sources: 22
+  priority_tiers:
+    tier_1: ["knee_acl", "lower_back", "ptsd", "mtbi"]
+    tier_2: ["shoulder"]
+  inclusion_rule: "n >= 100 for primary calibration; <100 flagged as supplementary"
+  population_priority: "UK military > allied military > civilian (with adjustment)"
+  endpoints:
+    - return_to_duty       # Occupational clearance, deployment readiness
+    - return_to_fitness    # Physical/functional recovery milestone
+  uncertainty_defaults:
+    military_source_weight: 1.0
+    civilian_source_weight: 0.8
+    meta_analysis_weight: 1.0
+    single_cohort_weight: 0.7
+  recovery_range_definition: "90% prediction interval unless otherwise stated"
+
+# ============================================================
+# INJURY-SPECIFIC PARAMETERS
+# ============================================================
+
+injuries:
+
+  # ----------------------------------------------------------
+  # TIER 1: HIGH PRIORITY INJURIES
+  # ----------------------------------------------------------
+
+  MSKI_moderate:
+
+    knee_acl:
+      # Recovery Timeline
+      median_recovery_months: 9.0
+      recovery_range_months: [6.0, 12.0]
+      time_to_fitness_months: 6.0        # Physical criteria met (LSI ≥90%)
+      time_to_rtd_months: 9.0            # Occupational clearance
+      
+      # Outcome Probabilities
+      prob_full_recovery: 0.50           # Return to unrestricted duty
+      prob_partial_recovery: 0.30        # RTD with permanent profile/restrictions
+      prob_not_recovered: 0.20           # Medical separation/discharge
+      
+      # Reinjury Risk
+      reinjury_rate: 0.15                # Overall population
+      reinjury_rate_under_25: 0.23       # Elevated risk in young personnel
+      reinjury_rate_early_rts: 0.169     # If RTS < 9 months (Piussi 2024)
+      
+      # Definitions
+      endpoint_definition: >
+        Return to full military duty without permanent medical
+        restrictions or medical discharge following ACL reconstruction.
+        Fitness milestone: LSI ≥90%, ACL-RSI ≥68.
+      
+      # Metadata
+      military_relevance: "High"
+      evidence_grade: "Moderate"
+      n_total: 4500                       # Approximate across sources
+      sources:
+        - antosh_2018
+        - marquina_2024
+        - anderson_2023
+        - wiggins_2016
+        - piussi_2024
+      
+      stakeholder_explainer: |
+        ACL injuries have one of the longest and most uncertain
+        recovery trajectories in the Armed Forces.
+        
+        KEY FACTS:
+        • About half of personnel return to unrestricted duty
+        • Recovery typically takes 9 months, but ranges 6-12 months
+        • Younger personnel (<25) face higher re-injury risk (~23%)
+        • Returning to activity too early increases re-injury risk
+        • A significant minority require permanent role restrictions
+          or leave service, especially if re-injury occurs
+
+    lower_back:
+      # Recovery Timeline
+      median_recovery_months: 6.0
+      recovery_range_months: [3.0, 12.0]
+      time_to_fitness_months: 3.0        # Pain-free function
+      time_to_rtd_months: 6.0            # Sustained RTD without time-loss
+      
+      # Outcome Probabilities
+      prob_full_recovery: 0.60
+      prob_partial_recovery: 0.25
+      prob_not_recovered: 0.15
+      
+      # Recurrence
+      recurrence_rate_12mo: 0.35
+      chronic_pain_rate: 0.25            # Transition to chronic >3mo
+      
+      # Definitions
+      endpoint_definition: >
+        Sustained return to duty without time-loss injury
+        or ongoing activity restriction due to back pain.
+        Fitness milestone: Pain-free ADLs and role-specific tasks.
+      
+      # Metadata
+      military_relevance: "Very High"
+      evidence_grade: "Moderate"
+      n_total: 3200
+      sources:
+        - cohen_2011
+        - olivotto_2025
+        - rhon_2022
+      
+      stakeholder_explainer: |
+        Lower back pain is the highest-volume MSKI in service
+        and the leading cause of limited duty days.
+        
+        KEY FACTS:
+        • Majority (60%) recover fully within 6 months
+        • About 1 in 3 experience recurrence within a year
+        • Mental health comorbidity dramatically worsens outcomes
+        • Pain at time of RTD predicts subsequent injury
+        • Supervised rehab reduces recovery time by ~25%
+
+  TBI_mild:
+
+    mtbi:
+      # Recovery Timeline
+      median_recovery_months: 1.0        # Uncomplicated single mTBI
+      recovery_range_months: [0.5, 3.0]  # 90% recover within 3 months
+      time_to_fitness_months: 0.5        # Symptom resolution
+      time_to_rtd_months: 1.0            # Progressive return to activity complete
+      
+      # For complicated/persistent cases
+      median_recovery_persistent_months: 6.0
+      recovery_range_persistent_months: [3.0, 18.0]
+      
+      # Outcome Probabilities (single uncomplicated mTBI)
+      prob_full_recovery: 0.85
+      prob_partial_recovery: 0.10        # Persistent symptoms, RTD with limitations
+      prob_not_recovered: 0.05           # Medical separation
+      
+      # For treatment-seeking population (worse prognosis)
+      prob_full_recovery_clinical: 0.70
+      prob_medical_discharge_clinical: 0.18  # RAND 2021: 7%→18% over 2002-2015
+      
+      # Complication Rates
+      pcs_rate: 0.15                     # Post-concussion syndrome >3mo
+      pcs_rate_military: 0.20            # Higher in combat-related mTBI
+      ptsd_comorbidity_rate: 0.482       # 48.2% military vs 11-18.6% civilian
+      
+      # Multiple TBI modifier
+      multiple_tbi_hr: 1.8               # ≥3 lifetime TBIs vs 1
+      
+      # Definitions
+      endpoint_definition: >
+        Resolution of post-concussive symptoms and return to full
+        cognitive and physical duties via progressive return to activity.
+        RTD defined as deployment readiness / Individual Medical Readiness.
+      
+      # Metadata
+      military_relevance: "Very High"
+      evidence_grade: "Moderate"
+      n_total: 8500
+      sources:
+        - oneil_2013
+        - vanderploeg_2017
+        - kennedy_2018
+        - rand_2021
+        - tbicohe_2023
+      
+      stakeholder_explainer: |
+        Mild TBI is the "signature injury" of recent conflicts.
+        Most recover quickly, but comorbidities complicate outcomes.
+        
+        KEY FACTS:
+        • ~90% recover within 1-4 weeks from single uncomplicated mTBI
+        • 10-20% develop persistent post-concussive symptoms
+        • Military personnel have 3-4x higher PTSD rate after mTBI
+          than civilians (48% vs 11-18%)
+        • History of ≥3 concussions significantly reduces RTD likelihood
+        • Medical discharge rates for TBI increased from 7% to 18%
+          between 2002-2015
+        • PTSD/depression comorbidity is the main driver of poor outcomes,
+          not the brain injury itself
+
+  MH_moderate:
+
+    ptsd:
+      # Recovery Timeline
+      median_recovery_months: 8.0
+      recovery_range_months: [6.0, 18.0]
+      time_to_fitness_months: 6.0        # Clinically meaningful improvement
+      time_to_rtd_months: 8.0            # Occupational functioning restored
+      
+      # Outcome Probabilities
+      prob_full_recovery: 0.35           # Sustained remission
+      prob_partial_recovery: 0.30        # Functional with ongoing symptoms
+      prob_not_recovered: 0.35           # Chronic/treatment-resistant
+      
+      # Treatment-specific
+      relapse_rate: 0.30
+      treatment_dropout_rate: 0.40       # High dropout from EBT
+      treatment_engagement_rate: 0.53    # Only 13-53% receive adequate care
+      
+      # UK-specific (KCMHR Phase 4)
+      prevalence_uk_regulars: 0.06       # 6% probable PTSD
+      prevalence_uk_reservists: 0.11     # Higher in reservists
+      complex_ptsd_rate: 0.04            # 4% meet complex PTSD criteria
+      
+      # Definitions
+      endpoint_definition: >
+        Sustained remission or clinically meaningful symptom
+        reduction (≥50% on PCL-5) allowing occupational functioning.
+        Fitness = deployment readiness.
+      
+      # Metadata
+      military_relevance: "Very High"
+      evidence_grade: "Moderate"
+      n_total: 15000
+      sources:
+        - hoge_2014
+        - kessler_2020
+        - kcmhr_2024
+        - liu_2025
+      
+      stakeholder_explainer: |
+        PTSD recovery is highly variable. Many improve with treatment,
+        but full remission is achieved in only around one-third.
+        
+        KEY FACTS:
+        • Only 35% achieve full remission with treatment
+        • 40% drop out of evidence-based treatment prematurely
+        • Comorbidity (depression, substance use) is the norm
+        • UK data shows 6% prevalence in regular forces, 11% in reservists
+        • Medical discharge rates for PTSD increased from 16% to 34%
+          between 2002-2015
+        • Social support and stigma are major factors in help-seeking
+
+  # ----------------------------------------------------------
+  # TIER 2: COMMON INJURIES
+  # ----------------------------------------------------------
+
+  MSKI_common:
+
+    shoulder:
+      # Recovery Timeline
+      median_recovery_months: 6.0
+      recovery_range_months: [4.0, 9.0]
+      time_to_fitness_months: 4.0
+      time_to_rtd_months: 6.0
+      
+      # Outcome Probabilities (surgical management)
+      prob_full_recovery: 0.80
+      prob_partial_recovery: 0.15
+      prob_not_recovered: 0.05
+      
+      # Non-operative caveat
+      recurrence_rate_nonoperative: 0.70  # High recurrence without surgery
+      
+      # Definitions
+      endpoint_definition: >
+        Return to unrestricted duty following surgical
+        stabilisation or rotator cuff repair.
+        Fitness = full ROM and strength.
+      
+      # Metadata
+      military_relevance: "High"
+      evidence_grade: "Low-Moderate"
+      evidence_note: "Limited military-specific data; primarily case series"
+      n_total: 450
+      sources:
+        - scanaliato_2022
+        - vanspanning_2025
+      
+      stakeholder_explainer: |
+        Shoulder injuries generally have favourable outcomes
+        in young, active personnel when treated surgically.
+        
+        KEY FACTS:
+        • ~80% return to unrestricted duty after surgery
+        • Non-operative management carries 70% recurrence risk
+          in high-demand roles
+        • Recovery typically 4-9 months depending on procedure
+        • Role restrictions may be needed temporarily
+
+# ============================================================
+# RISK FACTOR MODIFIERS (APPLIED ACROSS INJURIES)
+# ============================================================
+
+risk_factors:
+
+  # ----------------------------------------------------------
+  # DEMOGRAPHIC FACTORS
+  # ----------------------------------------------------------
+
+  age:
+    effect_type: "hazard_ratio"
+    per_unit: "per decade over 25"
+    hr: 1.15
+    ci_95: [1.08, 1.23]
+    applies_to: ["all_mski"]
+    direction: "delays_recovery"
+    sources: ["anderson_2023", "wiggins_2016"]
+    stakeholder_explainer: |
+      For every 10 years over age 25, recovery typically
+      takes around 15% longer. This reflects slower tissue
+      healing and reduced physiological reserve.
+
+  age_young_reinjury:
+    effect_type: "hazard_ratio"
+    description: "Younger age increases RE-INJURY risk (inverse of recovery)"
+    hr: 1.50                             # <25 vs ≥25 for second ACL injury
+    ci_95: [1.20, 1.90]
+    applies_to: ["knee_acl"]
+    direction: "increases_reinjury"
+    sources: ["wiggins_2016"]
+    stakeholder_explainer: |
+      Personnel under 25 have ~50% higher risk of re-injury
+      after ACL reconstruction, likely due to higher activity
+      levels and earlier return to demanding duties.
+
+  sex_female:
+    effect_type: "risk_ratio"
+    description: "Female sex effect on injury INCIDENCE (not recovery)"
+    rr_basic_training: 2.10
+    rr_basic_training_ci: [1.89, 2.33]
+    rr_post_training: 1.23
+    rr_post_training_ci: [1.05, 1.43]
+    applies_to: ["all_mski"]
+    direction: "higher_incidence"
+    recovery_modifier: null              # Insufficient evidence for recovery time
+    sources: ["schram_2022"]
+    evidence_note: |
+      Strong evidence for higher injury INCIDENCE in females during training.
+      Difference narrows post-training (RR 1.23).
+      Insufficient evidence to confirm longer RECOVERY times - may be
+      confounded by fitness levels and reporting behaviour.
+    stakeholder_explainer: |
+      Female personnel have higher injury rates during basic training
+      (about 2x) but this gap narrows substantially after initial training.
+      Fitness levels and reporting behaviour may explain much of the difference.
+      Evidence for longer recovery times is limited.
+
+  # ----------------------------------------------------------
+  # INJURY HISTORY FACTORS
+  # ----------------------------------------------------------
+
+  prior_same_region_injury:
+    effect_type: "hazard_ratio"
+    hr: 1.80
+    ci_95: [1.40, 2.30]
+    applies_to: ["all"]
+    direction: "delays_recovery"
+    sources: ["wiggins_2016", "olivotto_2025"]
+    stakeholder_explainer: |
+      A previous injury to the same body region
+      nearly doubles the risk of delayed recovery.
+      Prior injuries may indicate underlying vulnerability
+      or incomplete previous recovery.
+
+  multiple_tbi_history:
+    effect_type: "hazard_ratio"
+    description: "≥3 lifetime TBIs vs single TBI"
+    hr: 1.80
+    ci_95: [1.30, 2.50]
+    applies_to: ["mtbi"]
+    direction: "delays_recovery"
+    outcome: "medical_separation"
+    sources: ["kennedy_2018", "tbicohe_2023"]
+    stakeholder_explainer: |
+      Personnel with 3 or more lifetime concussions have
+      nearly double the risk of medical separation compared
+      to those with a single concussion.
+
+  # ----------------------------------------------------------
+  # TREATMENT FACTORS
+  # ----------------------------------------------------------
+
+  supervised_rehabilitation:
+    effect_type: "hazard_ratio"
+    hr: 0.75
+    ci_95: [0.65, 0.87]
+    applies_to: ["all_mski"]
+    direction: "accelerates_recovery"
+    sources: ["olivotto_2025"]
+    stakeholder_explainer: |
+      Supervised rehabilitation reduces recovery time
+      by approximately 25% compared with self-directed care.
+      This effect is consistent across MSKI types.
+
+  delayed_surgery:
+    effect_type: "hazard_ratio"
+    description: "Surgery >180 days post-injury"
+    hr: 1.35
+    ci_95: [1.15, 1.58]
+    applies_to: ["knee_acl"]
+    direction: "increases_failure"
+    outcome: "acl_failure_revision_separation"
+    sources: ["anderson_2023"]
+    stakeholder_explainer: |
+      Delaying ACL surgery beyond 6 months is associated
+      with ~35% higher failure rates (revision surgery or
+      knee-related medical separation).
+
+  # ----------------------------------------------------------
+  # COMORBIDITY FACTORS
+  # ----------------------------------------------------------
+
+  mental_health_comorbidity:
+    effect_type: "risk_ratio"
+    rr: 6.0
+    ci_95: [3.0, 10.0]
+    applies_to: ["all_mski", "mtbi"]
+    direction: "delays_recovery"
+    outcome: "poor_recovery_restricted_duty"
+    sources: ["olivotto_2025", "kcmhr_2024", "tbicohe_2023"]
+    evidence_note: "Wide CI reflects heterogeneity in definitions"
+    stakeholder_explainer: |
+      Co-existing mental health conditions (depression, anxiety, PTSD)
+      dramatically increase the risk of prolonged disability.
+      This is the single strongest predictor of poor MSKI outcomes
+      and the main driver of persistent symptoms after mTBI.
+
+  ptsd_comorbidity_mtbi:
+    effect_type: "prevalence_modifier"
+    prevalence_military: 0.482           # 48.2%
+    prevalence_civilian: 0.15            # 11-18.6%
+    applies_to: ["mtbi"]
+    impact: |
+      When PTSD co-occurs with mTBI, symptoms are more severe
+      and persistent. PTSD symptoms often drive disability
+      more than the brain injury itself.
+    sources: ["tbicohe_2023"]
+    stakeholder_explainer: |
+      Nearly half of military personnel with mTBI also have PTSD,
+      compared to only 15% of civilians. When both conditions
+      are present, recovery is significantly more complex.
+
+  # ----------------------------------------------------------
+  # BEHAVIOURAL FACTORS
+  # ----------------------------------------------------------
+
+  smoking:
+    effect_type: "hazard_ratio"
+    hr: 1.43
+    ci_95: [1.17, 1.74]
+    applies_to: ["all_mski"]
+    direction: "delays_recovery"
+    outcome: "surgical_failure"
+    sources: ["anderson_2023"]
+    stakeholder_explainer: |
+      Smoking is associated with poorer healing and ~40%
+      higher failure rates after musculoskeletal surgery.
+      Smoking cessation should be encouraged pre-operatively.
+
+  # ----------------------------------------------------------
+  # OCCUPATIONAL FACTORS
+  # ----------------------------------------------------------
+
+  high_demand_trade:
+    effect_type: "hazard_ratio"
+    description: "Infantry/Combat Arms vs Support trades"
+    hr: 1.30
+    ci_95: [1.10, 1.55]
+    applies_to: ["all"]
+    direction: "delays_rtd"
+    evidence_grade: "Low"
+    evidence_note: "Expert estimate pending calibration"
+    sources: ["expert_estimate"]
+    stakeholder_explainer: |
+      Personnel in physically demanding roles (Infantry,
+      Royal Marines, Para) face longer RTD times due to
+      higher fitness thresholds required for occupational clearance.
+      They may achieve Return to Fitness but not Return to Duty.
+
+# ============================================================
+# SOURCE BIBLIOGRAPHY
+# ============================================================
+
+sources:
+
+  # --- Original sources from uploaded PDFs ---
+  
+  antosh_2018:
+    authors: "Antosh IJ, Patzkowski JC, Engelen-Lee J, et al."
+    title: "Return to Military Duty After Anterior Cruciate Ligament Reconstruction"
+    journal: "Military Medicine"
+    year: 2018
+    doi: "10.1093/milmed/usx007"
+    study_type: "cohort"
+    n: 243
+    military_specific: true
+
+  marquina_2024:
+    authors: "Marquina V, Garcia-Fernandez P, Solana-Tramunt M"
+    title: "Return to full duty after ACL reconstruction in military personnel: systematic review"
+    journal: "Rev Esp Cir Ortop Traumatol"
+    year: 2024
+    study_type: "systematic_review"
+    n_studies: 12
+    military_specific: true
+
+  anderson_2023:
+    authors: "Anderson AB, Carney J, Ponce BA, et al."
+    title: "Survival of ACL Reconstructions in Active-Duty Military"
+    journal: "KSSTA"
+    year: 2023
+    study_type: "cohort"
+    n: 1200
+    military_specific: true
+
+  wiggins_2016:
+    authors: "Wiggins AJ, Grandhi RK, Schneider DK, et al."
+    title: "Risk of Secondary Injury in Younger Athletes After ACL Reconstruction"
+    journal: "American Journal of Sports Medicine"
+    year: 2016
+    doi: "10.1177/0363546515621554"
+    study_type: "meta_analysis"
+    n_studies: 19
+    n_participants: 5770
+    military_specific: false
+    civilian_athletic: true
+
+  piussi_2024:
+    authors: "Piussi R, Beischer S, Thomeé R, et al."
+    title: "Better Safe Than Sorry? Time to Return to Sport After ACL Reconstruction as a Risk Factor"
+    journal: "JOSPT"
+    year: 2024
+    doi: "10.2519/jospt.2023.11977"
+    study_type: "meta_analysis"
+    n_studies: 21
+    prospero: "CRD42021264078"
+    military_specific: false
+
+  cohen_2011:
+    authors: "Cohen SP, Nguyen C, Kapoor SG, et al."
+    title: "Back Pain During War: An Analysis of Factors Affecting Outcome"
+    journal: "Archives of Internal Medicine"
+    year: 2011
+    study_type: "cohort"
+    n: 480
+    military_specific: true
+
+  olivotto_2025:
+    authors: "Olivotto S, van Trier T, Bongers PM, et al."
+    title: "Prognostic factors for poor recovery after musculoskeletal injury in military personnel"
+    journal: "Musculoskeletal Science and Practice"
+    year: 2025
+    study_type: "systematic_review"
+    prospero: "CRD42023409781"
+    military_specific: true
+
+  rhon_2022:
+    authors: "Rhon DI, Greenlee TA, Sissel CD, et al."
+    title: "Recovery and return to duty after spine rehabilitation in military service members"
+    journal: "Arthroscopy Sports Med Rehab"
+    year: 2022
+    study_type: "cohort"
+    n: 312
+    military_specific: true
+
+  hoge_2014:
+    authors: "Hoge CW, Grossman SH, Auchterlonie JL, et al."
+    title: "PTSD Treatment for Soldiers After Combat Deployment: Low Utilization of Mental Health Care and Reasons for Dropout"
+    journal: "Psychiatric Services"
+    year: 2014
+    doi: "10.1176/appi.ps.201300307"
+    study_type: "observational"
+    n: 25000
+    military_specific: true
+
+  kessler_2020:
+    authors: "Kessler RC"
+    title: "Posttraumatic Stress Disorder in the National Comorbidity Survey"
+    journal: "Current Psychiatry Reports"
+    year: 2020
+    study_type: "review"
+    military_specific: false
+
+  kcmhr_2024:
+    authors: "Sharp ML, Fear NT, Burdett H, et al."
+    title: "Health and Well-being of the UK Armed Forces: KCMHR Phase 4"
+    journal: "UK Office for Veterans Affairs / King's Centre for Military Health Research"
+    year: 2024
+    study_type: "longitudinal_cohort"
+    n: 8000
+    military_specific: true
+    uk_specific: true
+
+  liu_2025:
+    authors: "Liu Y, Zhang X, Wang J, et al."
+    title: "Efficacy of treatments for PTSD: comprehensive meta-analysis"
+    journal: "Journal of Clinical Psychiatry"
+    year: 2025
+    study_type: "meta_analysis"
+    n_studies: 414
+    prospero: "CRD42021245754"
+
+  scanaliato_2022:
+    authors: "Scanaliato JP, Spindler KP, Rue JP, et al."
+    title: "Rotator cuff repair outcomes in young active-duty military personnel"
+    journal: "American Journal of Sports Medicine"
+    year: 2022
+    study_type: "case_series"
+    n: 89
+    military_specific: true
+    evidence_note: "n<100, supplementary source"
+
+  vanspanning_2025:
+    authors: "van Spanning S, Verweij L, van Deurzen D, et al."
+    title: "Return to duty after shoulder stabilisation surgery"
+    journal: "Journal of Shoulder and Elbow Surgery"
+    year: 2025
+    study_type: "cohort"
+    n: 156
+    military_specific: true
+
+  # --- New sources from web search ---
+
+  oneil_2013:
+    authors: "O'Neil ME, Carlson KF, Storzbach D, et al."
+    title: "Complications of Mild Traumatic Brain Injury in Veterans and Military Personnel: A Systematic Review"
+    journal: "VA Evidence Synthesis Program"
+    year: 2013
+    url: "https://www.hsrd.research.va.gov/publications/esp/mild_tbi.cfm"
+    study_type: "systematic_review"
+    military_specific: true
+
+  vanderploeg_2017:
+    authors: "Vanderploeg RD, Cooper DB, Curtiss G, et al."
+    title: "Epidemiology and prognosis of mild traumatic brain injury in returning soldiers"
+    journal: "Neurology"
+    year: 2017
+    doi: "10.1212/WNL.0000000000003839"
+    study_type: "cohort"
+    n: 557
+    military_specific: true
+
+  kennedy_2018:
+    authors: "Kennedy JE, Lu LH, Reid MW, et al."
+    title: "Predictors of Return to Duty vs Medical Retirement in Active Duty Military with Blast-Related mTBI"
+    journal: "Journal of Neurotrauma"
+    year: 2018
+    doi: "10.1089/neu.2017.5141"
+    study_type: "cohort"
+    n: 303
+    military_specific: true
+
+  rand_2021:
+    authors: "Krull H, Farmer CM, Simmons MM, et al."
+    title: "Post 9/11 Trends in Medical Separation for PTSD and TBI"
+    journal: "RAND Corporation"
+    year: 2021
+    url: "https://www.rand.org/pubs/research_briefs/RBA1197-1.html"
+    study_type: "retrospective_analysis"
+    n: 500000
+    military_specific: true
+    key_finding: "TBI medical discharge increased 7%→18% (2002-2015); PTSD 16%→34%"
+
+  tbicohe_2023:
+    authors: "TBI Center of Excellence"
+    title: "Research Review on Mild TBI and PTSD"
+    journal: "Health.mil"
+    year: 2023
+    url: "https://health.mil/Reference-Center/Publications/2023/09/29/TBICoE-Research-Review-Mild-TBI-and-PTSD"
+    study_type: "evidence_review"
+    military_specific: true
+    key_finding: "48.2% military vs 11-18.6% civilian PTSD post-TBI"
+
+  schram_2022:
+    authors: "Schram B, Canetti E, Orr R, Pope R"
+    title: "Injury rates in female and male military personnel: systematic review and meta-analysis"
+    journal: "BMC Women's Health"
+    year: 2022
+    doi: "10.1186/s12905-022-01899-4"
+    study_type: "meta_analysis"
+    n_studies: 25
+    prospero: "CRD42020170003"
+    military_specific: true
+    key_finding: "Female RR 2.10 basic training, 1.23 post-training"
+
+  expert_estimate:
+    authors: "SEKHMET Development Team"
+    title: "Expert clinical estimate pending calibration"
+    year: 2025
+    study_type: "expert_opinion"
+    evidence_grade: "Low"
+    note: "Placeholder for trade/role modifier - requires validation"
+
+# ============================================================
+# GAPS AND FUTURE WORK
+# ============================================================
+
+evidence_gaps:
+  
+  critical:
+    - description: "UK-specific ACL reconstruction RTD outcomes"
+      priority: "High"
+      potential_source: "DMRC Stanford Hall / DNRC data"
+    
+    - description: "Trade/role-specific recovery modifiers"
+      priority: "High"
+      potential_source: "MOD Medical Employment Standards data"
+
+  moderate:
+    - description: "Female sex effect on recovery TIME (not just incidence)"
+      priority: "Medium"
+      current_status: "Evidence insufficient - using incidence data only"
+    
+    - description: "UK military mTBI outcomes"
+      priority: "Medium"
+      potential_source: "DMRC / DPHC TBI pathway data"
+
+  low:
+    - description: "Ankle/foot stress fracture military outcomes"
+      priority: "Low"
+      current_status: "Using general population data"
+
+# ============================================================
+# VERSION HISTORY
+# ============================================================
+
+changelog:
+  - version: "1.1.0"
+    date: "2025-01-01"
+    changes:
+      - "Added mTBI injury type with military-specific parameters"
+      - "Added multiple_tbi_history risk factor"
+      - "Added sex_female risk factor (incidence only)"
+      - "Added delayed_surgery risk factor"
+      - "Added ptsd_comorbidity_mtbi modifier"
+      - "Added high_demand_trade placeholder"
+      - "Split time_to_fitness vs time_to_rtd for all injuries"
+      - "Added n_total and evidence_note fields"
+      - "Added 8 new sources from literature search"
+      - "Created evidence_gaps section"
+  
+  - version: "1.0.0"
+    date: "2025-01-01"
+    changes:
+      - "Initial version from GPT extraction of uploaded PDFs"

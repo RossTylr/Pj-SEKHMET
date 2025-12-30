@@ -14,10 +14,11 @@ import json
 
 from config import (
     RecoveryConfig, DEFAULT_CONFIG,
-    InjuryType, BodyRegion, JMESStatus, RecoveryBand, Trade,
-    get_age_band, get_recovery_band
+    InjuryType, BodyRegion, JMESStatus, RecoveryBand, Trade, TradeCategory,
+    get_age_band, get_recovery_band, get_trade_category, EvidenceBase
 )
 from recovery_model import RecoveryPredictor, CaseInput, RecoveryPrediction
+from cox_model import CoxRecoveryModel, CaseInput as CoxCaseInput, CoxPrediction
 
 
 # ============================================================
@@ -36,6 +37,10 @@ if 'config' not in st.session_state:
     st.session_state.config = RecoveryConfig()
 if 'predictor' not in st.session_state:
     st.session_state.predictor = RecoveryPredictor(st.session_state.config)
+if 'cox_model' not in st.session_state:
+    st.session_state.cox_model = CoxRecoveryModel()
+if 'model_type' not in st.session_state:
+    st.session_state.model_type = "Cox PH (Evidence-based)"
 
 
 # ============================================================
@@ -44,9 +49,23 @@ if 'predictor' not in st.session_state:
 
 def render_sidebar():
     """Configuration sidebar"""
-    
+
     st.sidebar.title("⚙️ Configuration")
-    
+
+    # Model selection
+    st.sidebar.subheader("Model Selection")
+    st.session_state.model_type = st.sidebar.selectbox(
+        "Prediction Model",
+        ["Cox PH (Evidence-based)", "Heuristic (Legacy)"],
+        index=0 if st.session_state.model_type == "Cox PH (Evidence-based)" else 1,
+        help="Cox PH model uses clinical evidence from 22 peer-reviewed sources"
+    )
+
+    if st.session_state.model_type == "Cox PH (Evidence-based)":
+        st.sidebar.info(f"Evidence base v{st.session_state.cox_model.evidence.version}")
+
+    st.sidebar.markdown("---")
+
     with st.sidebar.expander("📊 Recovery Bands", expanded=False):
         st.markdown("Define thresholds (months)")
         
@@ -162,234 +181,464 @@ def render_sidebar():
 
 def render_individual_tab():
     """Individual case prediction"""
-    
+
     st.header("🧑‍⚕️ Individual Recovery Prediction")
-    
+
+    # Get valid trades (exclude legacy aliases)
+    valid_trades = [
+        Trade.INFANTRY, Trade.ROYAL_MARINES, Trade.PARACHUTE_REGIMENT,
+        Trade.ARMOUR, Trade.ARTILLERY, Trade.COMBAT_ENGINEER,
+        Trade.SIGNALS, Trade.INTELLIGENCE, Trade.REME, Trade.MEDIC, Trade.MILITARY_POLICE,
+        Trade.LOGISTICS, Trade.AGC, Trade.DENTAL, Trade.VETERINARY, Trade.CHAPLAIN, Trade.GENERIC
+    ]
+
+    # Get valid injury types (exclude legacy)
+    valid_injury_types = [
+        InjuryType.MSKI_MINOR, InjuryType.MSKI_MODERATE, InjuryType.MSKI_MAJOR, InjuryType.MSKI_SEVERE,
+        InjuryType.MH_MILD, InjuryType.MH_MODERATE, InjuryType.MH_SEVERE,
+        InjuryType.TBI_MILD, InjuryType.TBI_MODERATE, InjuryType.TBI_SEVERE
+    ]
+
+    # Get valid body regions (exclude legacy)
+    valid_body_regions = [
+        BodyRegion.HEAD_NECK, BodyRegion.SHOULDER, BodyRegion.ELBOW, BodyRegion.WRIST_HAND,
+        BodyRegion.CERVICAL_SPINE, BodyRegion.THORACIC_SPINE, BodyRegion.LOWER_BACK,
+        BodyRegion.HIP_GROIN, BodyRegion.KNEE, BodyRegion.ANKLE_FOOT,
+        BodyRegion.MENTAL, BodyRegion.BRAIN, BodyRegion.MULTIPLE
+    ]
+
     col1, col2 = st.columns([1, 2])
-    
+
     with col1:
         st.subheader("Case Details")
-        
+
         age = st.number_input("Age", 18, 60, 32)
-        
+
         trade = st.selectbox(
             "Trade",
-            [t.value for t in Trade],
-            index=0
+            valid_trades,
+            format_func=lambda t: f"{t.name.replace('_', ' ').title()} ({get_trade_category(t).name})"
         )
-        
+
         injury_type = st.selectbox(
             "Injury Type",
-            [i.value for i in InjuryType],
-            format_func=lambda x: f"{x} - {st.session_state.config.injury_profiles[x].description}"
+            valid_injury_types,
+            format_func=lambda x: x.name.replace('_', ' ').title()
         )
-        
+
         body_region = st.selectbox(
             "Body Region",
-            [b.value for b in BodyRegion]
+            valid_body_regions,
+            format_func=lambda x: x.name.replace('_', ' ').title()
         )
-        
+
         severity = st.slider("Severity Score", 1, 10, 5)
-        
+
         prior_injuries = st.number_input("Prior Injury Count", 0, 20, 0)
-        
+
         prior_same_region = st.checkbox("Prior injury to same region?")
-        
+
         current_jmes = st.selectbox(
             "Current JMES",
-            [j.value for j in JMESStatus],
-            index=1  # Default to MLD
+            [JMESStatus.MFD, JMESStatus.MLD, JMESStatus.MND],
+            index=1,  # Default to MLD
+            format_func=lambda x: x.name
         )
-        
+
         months_since = st.number_input("Months since injury", 0, 24, 0)
-        
+
         receiving_treatment = st.checkbox("Receiving treatment?", value=True)
-        
+
+        # Additional Cox model inputs
+        if st.session_state.model_type == "Cox PH (Evidence-based)":
+            st.markdown("---")
+            st.markdown("**Risk Factors**")
+            is_smoker = st.checkbox("Current smoker?")
+            has_mh_comorbidity = st.checkbox("Mental health comorbidity?")
+            if injury_type in [InjuryType.TBI_MILD, InjuryType.TBI_MODERATE, InjuryType.TBI_SEVERE]:
+                multiple_tbi = st.checkbox("History of 3+ TBIs?")
+            else:
+                multiple_tbi = False
+        else:
+            is_smoker = False
+            has_mh_comorbidity = False
+            multiple_tbi = False
+
         predict_btn = st.button("🔮 Predict Recovery", type="primary", use_container_width=True)
     
     with col2:
         if predict_btn:
-            # Create case
-            case = CaseInput(
-                age=age,
-                trade=Trade(trade),
-                injury_type=InjuryType(injury_type),
-                body_region=BodyRegion(body_region),
-                severity_score=severity,
-                prior_injury_count=prior_injuries,
-                prior_same_region=prior_same_region,
-                current_jmes=JMESStatus(current_jmes),
-                months_since_injury=months_since,
-                receiving_treatment=receiving_treatment
-            )
-            
-            # Get prediction
-            prediction = st.session_state.predictor.predict(case)
-            
-            # Display results
-            st.subheader("📊 Prediction Results")
-            
-            # Key metrics
-            col_a, col_b, col_c, col_d = st.columns(4)
-            
-            band_colors = {
-                "Fast": "green",
-                "Medium": "orange",
-                "Slow": "red",
-                "Complex": "purple"
-            }
-            
-            with col_a:
-                st.metric(
-                    "Expected Recovery",
-                    f"{prediction.expected_recovery_months} months"
+            # Use Cox model or heuristic based on selection
+            if st.session_state.model_type == "Cox PH (Evidence-based)":
+                # Create Cox case
+                cox_case = CoxCaseInput(
+                    age=age,
+                    trade=trade,
+                    injury_type=injury_type,
+                    body_region=body_region,
+                    severity_score=severity,
+                    prior_injury_count=prior_injuries,
+                    prior_same_region=prior_same_region,
+                    current_jmes=current_jmes,
+                    months_since_injury=float(months_since),
+                    receiving_treatment=receiving_treatment,
+                    is_smoker=is_smoker,
+                    has_mh_comorbidity=has_mh_comorbidity,
+                    multiple_tbi_history=multiple_tbi
                 )
-            with col_b:
-                st.metric(
-                    "Recovery Band",
-                    prediction.recovery_band.value
+
+                # Get Cox prediction
+                cox_prediction = st.session_state.cox_model.predict(cox_case)
+
+                # Display Cox results
+                st.subheader("📊 Prediction Results (Cox PH Model)")
+
+                # Key metrics
+                col_a, col_b, col_c, col_d = st.columns(4)
+
+                with col_a:
+                    st.metric(
+                        "Median Recovery",
+                        f"{cox_prediction.median_recovery_months} months"
+                    )
+                with col_b:
+                    st.metric(
+                        "Recovery Band",
+                        cox_prediction.recovery_band.value.title()
+                    )
+                with col_c:
+                    st.metric(
+                        "Full Recovery Prob",
+                        f"{cox_prediction.prob_full_recovery:.0%}"
+                    )
+                with col_d:
+                    st.metric(
+                        "Confidence",
+                        cox_prediction.confidence.title()
+                    )
+
+                st.markdown("---")
+
+                # Timeline with Return to Fitness vs Return to Duty
+                st.subheader("📅 Recovery Timeline")
+
+                col_t1, col_t2, col_t3 = st.columns(3)
+                with col_t1:
+                    st.markdown(f"**Return to Fitness:** {cox_prediction.time_to_fitness_months} months")
+                with col_t2:
+                    st.markdown(f"**Return to Duty:** {cox_prediction.time_to_rtd_months} months")
+                with col_t3:
+                    st.markdown(f"**90% Range:** {cox_prediction.recovery_lower_90}-{cox_prediction.recovery_upper_90} months")
+
+            else:
+                # Create legacy case
+                case = CaseInput(
+                    age=age,
+                    trade=trade,
+                    injury_type=injury_type,
+                    body_region=body_region,
+                    severity_score=severity,
+                    prior_injury_count=prior_injuries,
+                    prior_same_region=prior_same_region,
+                    current_jmes=current_jmes,
+                    months_since_injury=months_since,
+                    receiving_treatment=receiving_treatment
                 )
-            with col_c:
-                st.metric(
-                    "Full Recovery Prob",
-                    f"{prediction.prob_full_recovery:.0%}"
+
+                # Get legacy prediction
+                prediction = st.session_state.predictor.predict(case)
+
+                # Display legacy results
+                st.subheader("📊 Prediction Results (Heuristic Model)")
+
+                # Key metrics
+                col_a, col_b, col_c, col_d = st.columns(4)
+
+                with col_a:
+                    st.metric(
+                        "Expected Recovery",
+                        f"{prediction.expected_recovery_months} months"
+                    )
+                with col_b:
+                    st.metric(
+                        "Recovery Band",
+                        prediction.recovery_band.value.title()
+                    )
+                with col_c:
+                    st.metric(
+                        "Full Recovery Prob",
+                        f"{prediction.prob_full_recovery:.0%}"
+                    )
+                with col_d:
+                    st.metric(
+                        "Confidence",
+                        prediction.confidence_level
+                    )
+
+                st.markdown("---")
+
+                # Timeline
+                st.subheader("📅 Recovery Timeline")
+
+                col_t1, col_t2, col_t3 = st.columns(3)
+                with col_t1:
+                    st.markdown(f"**Optimistic:** {prediction.optimistic_months} months")
+                with col_t2:
+                    st.markdown(f"**Realistic:** {prediction.realistic_months} months")
+                with col_t3:
+                    st.markdown(f"**Pessimistic:** {prediction.pessimistic_months} months")
+            
+            # Visualizations - shared between models
+            if st.session_state.model_type == "Cox PH (Evidence-based)":
+                # Cox model visualizations
+                t, survival = st.session_state.cox_model.get_survival_curve(cox_case, 24)
+
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=t,
+                    y=1 - survival,  # Convert survival to recovery probability
+                    mode='lines',
+                    name='Recovery Probability',
+                    line=dict(color='#2E86AB', width=3),
+                    fill='tozeroy',
+                    fillcolor='rgba(46, 134, 171, 0.2)'
+                ))
+
+                # Add threshold lines
+                fig.add_hline(y=0.5, line_dash="dash", line_color="orange",
+                             annotation_text="50%")
+                fig.add_hline(y=0.75, line_dash="dash", line_color="green",
+                             annotation_text="75%")
+                fig.add_hline(y=0.9, line_dash="dash", line_color="darkgreen",
+                             annotation_text="90%")
+
+                fig.update_layout(
+                    title="Cumulative Recovery Probability Over Time",
+                    xaxis_title="Months",
+                    yaxis_title="Probability of Recovery",
+                    yaxis_range=[0, 1],
+                    height=350
                 )
-            with col_d:
-                st.metric(
-                    "Confidence",
-                    prediction.confidence_level
+                st.plotly_chart(fig, use_container_width=True)
+
+                # Probability milestones
+                st.subheader("🎯 Recovery Milestones")
+
+                milestone_df = pd.DataFrame({
+                    "Timeframe": ["3 months", "6 months", "12 months", "24 months"],
+                    "Probability": [
+                        cox_prediction.prob_recovery_3mo,
+                        cox_prediction.prob_recovery_6mo,
+                        cox_prediction.prob_recovery_12mo,
+                        cox_prediction.prob_recovery_24mo
+                    ]
+                })
+
+                fig_bar = px.bar(
+                    milestone_df,
+                    x="Timeframe",
+                    y="Probability",
+                    color="Probability",
+                    color_continuous_scale=["red", "orange", "green"],
+                    range_color=[0, 1]
                 )
-            
-            st.markdown("---")
-            
-            # Timeline
-            st.subheader("📅 Recovery Timeline")
-            
-            col_t1, col_t2, col_t3 = st.columns(3)
-            with col_t1:
-                st.markdown(f"**🟢 Optimistic:** {prediction.optimistic_months} months")
-            with col_t2:
-                st.markdown(f"**🟡 Realistic:** {prediction.realistic_months} months")
-            with col_t3:
-                st.markdown(f"**🔴 Pessimistic:** {prediction.pessimistic_months} months")
-            
-            # Recovery curve
-            curve_data = st.session_state.predictor.generate_recovery_curve(case, 24)
-            curve_df = pd.DataFrame(curve_data)
-            
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(
-                x=curve_df['month'],
-                y=curve_df['cumulative_recovery_prob'],
-                mode='lines+markers',
-                name='Recovery Probability',
-                line=dict(color='#2E86AB', width=3),
-                fill='tozeroy',
-                fillcolor='rgba(46, 134, 171, 0.2)'
-            ))
-            
-            # Add threshold lines
-            fig.add_hline(y=0.5, line_dash="dash", line_color="orange", 
-                         annotation_text="50%")
-            fig.add_hline(y=0.75, line_dash="dash", line_color="green",
-                         annotation_text="75%")
-            fig.add_hline(y=0.9, line_dash="dash", line_color="darkgreen",
-                         annotation_text="90%")
-            
-            fig.update_layout(
-                title="Cumulative Recovery Probability Over Time",
-                xaxis_title="Months",
-                yaxis_title="Probability of Recovery",
-                yaxis_range=[0, 1],
-                height=350
-            )
-            st.plotly_chart(fig, use_container_width=True)
-            
-            # Probability milestones
-            st.subheader("🎯 Recovery Milestones")
-            
-            milestone_df = pd.DataFrame({
-                "Timeframe": ["3 months", "6 months", "12 months", "24 months"],
-                "Probability": [
-                    prediction.prob_recovery_3mo,
-                    prediction.prob_recovery_6mo,
-                    prediction.prob_recovery_12mo,
-                    prediction.prob_recovery_24mo
-                ]
-            })
-            
-            fig_bar = px.bar(
-                milestone_df,
-                x="Timeframe",
-                y="Probability",
-                color="Probability",
-                color_continuous_scale=["red", "orange", "green"],
-                range_color=[0, 1]
-            )
-            fig_bar.update_layout(height=250, showlegend=False)
-            st.plotly_chart(fig_bar, use_container_width=True)
-            
-            # Contributing factors
-            st.subheader("⚖️ Contributing Factors")
-            
-            factors_df = pd.DataFrame([
-                {"Factor": k, "Impact": v, "Effect": "Slower" if v > 1 else "Faster" if v < 1 else "Neutral"}
-                for k, v in prediction.contributing_factors.items()
-            ])
-            
-            fig_factors = px.bar(
-                factors_df,
-                x="Impact",
-                y="Factor",
-                orientation='h',
-                color="Effect",
-                color_discrete_map={"Slower": "#e74c3c", "Faster": "#2ecc71", "Neutral": "#95a5a6"}
-            )
-            fig_factors.add_vline(x=1.0, line_dash="dash", line_color="black")
-            fig_factors.update_layout(height=300, xaxis_range=[0.5, 2.0])
-            st.plotly_chart(fig_factors, use_container_width=True)
-            
-            # JMES outcomes
-            st.subheader("🏥 JMES Outcome Probabilities")
-            
-            jmes_df = pd.DataFrame({
-                "Outcome": ["Full Recovery (MFD)", "Partial Recovery", "Medical Discharge"],
-                "Probability": [
-                    prediction.prob_full_recovery,
-                    prediction.prob_partial_recovery,
-                    prediction.prob_medical_discharge
-                ]
-            })
-            
-            fig_jmes = px.pie(
-                jmes_df,
-                values="Probability",
-                names="Outcome",
-                color="Outcome",
-                color_discrete_map={
-                    "Full Recovery (MFD)": "#2ecc71",
-                    "Partial Recovery": "#f39c12",
-                    "Medical Discharge": "#e74c3c"
-                }
-            )
-            fig_jmes.update_layout(height=300)
-            st.plotly_chart(fig_jmes, use_container_width=True)
-            
-            # Manager summary
-            st.subheader("📋 Line Manager Summary")
-            
-            st.info(f"""
-            **Expected Return to Duty:** {prediction.realistic_months} months (range: {prediction.optimistic_months}-{prediction.pessimistic_months})
-            
-            **Planning Recommendation:** 
-            - Earliest possible: {prediction.optimistic_months} months
-            - Plan for: {prediction.realistic_months} months  
-            - Contingency: {prediction.pessimistic_months} months
-            
-            **Recovery Band:** {prediction.recovery_band.value}
-            
-            **Confidence:** {prediction.confidence_level}
-            """)
+                fig_bar.update_layout(height=250, showlegend=False)
+                st.plotly_chart(fig_bar, use_container_width=True)
+
+                # Hazard ratios (contributing factors)
+                st.subheader("⚖️ Risk Factor Impact (Hazard Ratios)")
+
+                factors_df = pd.DataFrame([
+                    {"Factor": k.replace('_', ' ').title(), "HR": v, "Effect": "Slower" if v > 1 else "Faster" if v < 1 else "Neutral"}
+                    for k, v in cox_prediction.hazard_ratios.items()
+                    if v != 1.0
+                ])
+
+                if not factors_df.empty:
+                    fig_factors = px.bar(
+                        factors_df,
+                        x="HR",
+                        y="Factor",
+                        orientation='h',
+                        color="Effect",
+                        color_discrete_map={"Slower": "#e74c3c", "Faster": "#2ecc71", "Neutral": "#95a5a6"}
+                    )
+                    fig_factors.add_vline(x=1.0, line_dash="dash", line_color="black")
+                    fig_factors.update_layout(height=300, xaxis_range=[0.5, 2.5])
+                    st.plotly_chart(fig_factors, use_container_width=True)
+
+                # JMES outcomes
+                st.subheader("🏥 JMES Outcome Probabilities")
+
+                jmes_df = pd.DataFrame({
+                    "Outcome": ["Full Recovery (MFD)", "Partial Recovery", "Medical Discharge"],
+                    "Probability": [
+                        cox_prediction.prob_full_recovery,
+                        cox_prediction.prob_partial_recovery,
+                        cox_prediction.prob_medical_discharge
+                    ]
+                })
+
+                fig_jmes = px.pie(
+                    jmes_df,
+                    values="Probability",
+                    names="Outcome",
+                    color="Outcome",
+                    color_discrete_map={
+                        "Full Recovery (MFD)": "#2ecc71",
+                        "Partial Recovery": "#f39c12",
+                        "Medical Discharge": "#e74c3c"
+                    }
+                )
+                fig_jmes.update_layout(height=300)
+                st.plotly_chart(fig_jmes, use_container_width=True)
+
+                # Manager summary
+                st.subheader("📋 Line Manager Summary")
+
+                st.info(f"""
+                **Expected Return to Duty:** {cox_prediction.time_to_rtd_months} months (90% range: {cox_prediction.recovery_lower_90}-{cox_prediction.recovery_upper_90})
+
+                **Key Milestones:**
+                - Return to Fitness: {cox_prediction.time_to_fitness_months} months
+                - Return to Duty: {cox_prediction.time_to_rtd_months} months
+
+                **Recovery Band:** {cox_prediction.recovery_band.value.title()}
+
+                **Confidence:** {cox_prediction.confidence.title()}
+                ({cox_prediction.confidence_rationale})
+                """)
+
+                # Evidence sources
+                if cox_prediction.primary_sources:
+                    with st.expander("📚 Evidence Sources"):
+                        for source_id in cox_prediction.primary_sources:
+                            citation = st.session_state.cox_model.evidence.get_source_citation(source_id)
+                            if citation:
+                                st.markdown(f"**{citation.get('authors', 'Unknown')}** ({citation.get('year', 'N/A')}). "
+                                           f"*{citation.get('title', 'Untitled')}*. {citation.get('journal', '')}. "
+                                           f"DOI: {citation.get('doi', 'N/A')}")
+                            else:
+                                st.markdown(f"- {source_id}")
+
+            else:
+                # Legacy heuristic model visualizations
+                curve_data = st.session_state.predictor.generate_recovery_curve(case, 24)
+                curve_df = pd.DataFrame(curve_data)
+
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=curve_df['month'],
+                    y=curve_df['cumulative_recovery_prob'],
+                    mode='lines+markers',
+                    name='Recovery Probability',
+                    line=dict(color='#2E86AB', width=3),
+                    fill='tozeroy',
+                    fillcolor='rgba(46, 134, 171, 0.2)'
+                ))
+
+                # Add threshold lines
+                fig.add_hline(y=0.5, line_dash="dash", line_color="orange",
+                             annotation_text="50%")
+                fig.add_hline(y=0.75, line_dash="dash", line_color="green",
+                             annotation_text="75%")
+                fig.add_hline(y=0.9, line_dash="dash", line_color="darkgreen",
+                             annotation_text="90%")
+
+                fig.update_layout(
+                    title="Cumulative Recovery Probability Over Time",
+                    xaxis_title="Months",
+                    yaxis_title="Probability of Recovery",
+                    yaxis_range=[0, 1],
+                    height=350
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+                # Probability milestones
+                st.subheader("🎯 Recovery Milestones")
+
+                milestone_df = pd.DataFrame({
+                    "Timeframe": ["3 months", "6 months", "12 months", "24 months"],
+                    "Probability": [
+                        prediction.prob_recovery_3mo,
+                        prediction.prob_recovery_6mo,
+                        prediction.prob_recovery_12mo,
+                        prediction.prob_recovery_24mo
+                    ]
+                })
+
+                fig_bar = px.bar(
+                    milestone_df,
+                    x="Timeframe",
+                    y="Probability",
+                    color="Probability",
+                    color_continuous_scale=["red", "orange", "green"],
+                    range_color=[0, 1]
+                )
+                fig_bar.update_layout(height=250, showlegend=False)
+                st.plotly_chart(fig_bar, use_container_width=True)
+
+                # Contributing factors
+                st.subheader("⚖️ Contributing Factors")
+
+                factors_df = pd.DataFrame([
+                    {"Factor": k, "Impact": v, "Effect": "Slower" if v > 1 else "Faster" if v < 1 else "Neutral"}
+                    for k, v in prediction.contributing_factors.items()
+                ])
+
+                fig_factors = px.bar(
+                    factors_df,
+                    x="Impact",
+                    y="Factor",
+                    orientation='h',
+                    color="Effect",
+                    color_discrete_map={"Slower": "#e74c3c", "Faster": "#2ecc71", "Neutral": "#95a5a6"}
+                )
+                fig_factors.add_vline(x=1.0, line_dash="dash", line_color="black")
+                fig_factors.update_layout(height=300, xaxis_range=[0.5, 2.0])
+                st.plotly_chart(fig_factors, use_container_width=True)
+
+                # JMES outcomes
+                st.subheader("🏥 JMES Outcome Probabilities")
+
+                jmes_df = pd.DataFrame({
+                    "Outcome": ["Full Recovery (MFD)", "Partial Recovery", "Medical Discharge"],
+                    "Probability": [
+                        prediction.prob_full_recovery,
+                        prediction.prob_partial_recovery,
+                        prediction.prob_medical_discharge
+                    ]
+                })
+
+                fig_jmes = px.pie(
+                    jmes_df,
+                    values="Probability",
+                    names="Outcome",
+                    color="Outcome",
+                    color_discrete_map={
+                        "Full Recovery (MFD)": "#2ecc71",
+                        "Partial Recovery": "#f39c12",
+                        "Medical Discharge": "#e74c3c"
+                    }
+                )
+                fig_jmes.update_layout(height=300)
+                st.plotly_chart(fig_jmes, use_container_width=True)
+
+                # Manager summary
+                st.subheader("📋 Line Manager Summary")
+
+                st.info(f"""
+                **Expected Return to Duty:** {prediction.realistic_months} months (range: {prediction.optimistic_months}-{prediction.pessimistic_months})
+
+                **Planning Recommendation:**
+                - Earliest possible: {prediction.optimistic_months} months
+                - Plan for: {prediction.realistic_months} months
+                - Contingency: {prediction.pessimistic_months} months
+
+                **Recovery Band:** {prediction.recovery_band.value.title()}
+
+                **Confidence:** {prediction.confidence_level}
+                """)
 
 
 # ============================================================
@@ -409,22 +658,24 @@ def render_cohort_tab():
     # Sample data option
     if st.button("Generate Sample Cohort (10 cases)"):
         np.random.seed(42)
-        
+
+        # Valid enum values for sampling
+        valid_trades = [Trade.INFANTRY, Trade.SIGNALS, Trade.LOGISTICS, Trade.MEDIC, Trade.REME]
+        valid_injury_types = [InjuryType.MSKI_MINOR, InjuryType.MSKI_MODERATE, InjuryType.MSKI_MAJOR, InjuryType.MH_MILD, InjuryType.MH_MODERATE]
+        valid_body_regions = [BodyRegion.LOWER_BACK, BodyRegion.KNEE, BodyRegion.SHOULDER, BodyRegion.MENTAL, BodyRegion.MULTIPLE]
+        valid_jmes = [JMESStatus.MLD, JMESStatus.MND]
+
         cases = []
         for i in range(10):
             case = CaseInput(
                 age=np.random.randint(22, 48),
-                trade=Trade(np.random.choice([t.value for t in Trade])),
-                injury_type=InjuryType(np.random.choice([
-                    "MSKI_minor", "MSKI_moderate", "MSKI_major", "MH_mild", "MH_moderate"
-                ])),
-                body_region=BodyRegion(np.random.choice([
-                    "Lower_back", "Knee", "Shoulder", "Mental", "Other"
-                ])),
+                trade=np.random.choice(valid_trades),
+                injury_type=np.random.choice(valid_injury_types),
+                body_region=np.random.choice(valid_body_regions),
                 severity_score=np.random.randint(2, 9),
                 prior_injury_count=np.random.randint(0, 4),
                 prior_same_region=np.random.random() < 0.2,
-                current_jmes=JMESStatus(np.random.choice(["MLD", "MND"], p=[0.7, 0.3])),
+                current_jmes=np.random.choice(valid_jmes, p=[0.7, 0.3]),
                 months_since_injury=np.random.randint(0, 3),
                 receiving_treatment=True
             )

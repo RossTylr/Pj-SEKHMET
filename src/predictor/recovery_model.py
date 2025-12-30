@@ -25,7 +25,7 @@ except ImportError:
 
 @dataclass
 class CaseInput:
-    """Input case for prediction"""
+    """Input case for prediction (legacy heuristic model)"""
     age: int
     trade: Trade
     injury_type: InjuryType
@@ -36,6 +36,12 @@ class CaseInput:
     current_jmes: JMESStatus
     months_since_injury: int = 0
     receiving_treatment: bool = True
+
+    # Additional fields for Cox model compatibility
+    is_smoker: bool = False
+    has_mh_comorbidity: bool = False
+    multiple_tbi_history: bool = False
+    is_female: bool = False
 
 
 @dataclass
@@ -80,11 +86,11 @@ class RecoveryPredictor:
     
     def predict(self, case: CaseInput) -> RecoveryPrediction:
         """Generate recovery prediction for a case"""
-        
+
         # Get base recovery time from injury type
         injury_profile = self.config.injury_profiles.get(
             case.injury_type.value,
-            self.config.injury_profiles["Other"]
+            self.config.injury_profiles.get("mski_moderate")  # Default fallback
         )
         
         base_min, base_max = injury_profile.base_recovery_months
