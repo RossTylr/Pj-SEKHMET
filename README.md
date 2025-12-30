@@ -4,21 +4,30 @@
 
 Clinical decision support + workforce planning tool with evidence-based Cox proportional hazards modelling.
 
+[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://pj-sekhmet-ckltbh5thn6walldqpr2pt.streamlit.app)
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/RossTylr/Pj-SEKHMET)
+
+## Live App
+
+**[Open the SEKHMET Recovery Predictor](https://pj-sekhmet-ckltbh5thn6walldqpr2pt.streamlit.app)** - No installation required!
 
 ## Quick Start
 
-### Option 1: Run Locally
+### Option 1: Use the Live App (Recommended)
+
+Click the Streamlit badge above or visit [pj-sekhmet-ckltbh5thn6walldqpr2pt.streamlit.app](https://pj-sekhmet-ckltbh5thn6walldqpr2pt.streamlit.app) to use the app directly in your browser.
+
+### Option 2: Run in GitHub Codespaces
+
+Click the Codespaces badge to open a fully-configured development environment in your browser. The Streamlit app will automatically launch on port 8501.
+
+### Option 3: Run Locally
 
 ```bash
 cd src/predictor
 pip install -r ../../requirements.txt
 streamlit run app.py
 ```
-
-### Option 2: Run in GitHub Codespaces
-
-Click the badge above to open a fully-configured development environment in your browser. The Streamlit app will automatically launch on port 8501.
 
 ## Features
 
