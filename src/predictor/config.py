@@ -137,18 +137,13 @@ class InjuryType(Enum):
     - MAJOR: Significant intervention, 6-12 months recovery
     - SEVERE: Complex/surgical, >12 months or uncertain recovery
 
-    Mental health uses mild/moderate/severe per clinical convention.
+    Note: MH removed in V2 - MSKI only.
     """
-    # Musculoskeletal (MSKI)
+    # Musculoskeletal (MSKI) only
     MSKI_MINOR = "mski_minor"
     MSKI_MODERATE = "mski_moderate"
     MSKI_MAJOR = "mski_major"
     MSKI_SEVERE = "mski_severe"
-
-    # Mental Health (MH)
-    MH_MILD = "mh_mild"
-    MH_MODERATE = "mh_moderate"
-    MH_SEVERE = "mh_severe"
 
     # Legacy values for backward compatibility
     ACUTE_MEDICAL = "mski_minor"
@@ -160,28 +155,25 @@ class InjuryType(Enum):
         # Split into category and severity
         parts = self.value.split('_')
         if len(parts) == 2:
-            category = parts[0].upper()  # MSKI or MH
-            severity = parts[1].title()  # Minor, Moderate, Major, Severe, Mild
+            category = parts[0].upper()  # MSKI
+            severity = parts[1].title()  # Minor, Moderate, Major, Severe
             return f"{category} {severity}"
         return self.value.replace('_', ' ').title()
 
 
 class BodyRegion(Enum):
     """
-    Anatomical regions for injury localisation.
+    Anatomical regions for MSKI injury localisation.
 
     Maps to evidence base parameters (e.g., injuries.MSKI_moderate.knee_acl).
-    For MH conditions, use condition-specific regions (PTSD, DEPRESSION, etc.).
+    Note: MH removed in V2 - MSKI body regions only.
     """
     # Upper body
-    HEAD_NECK = "head_neck"
     SHOULDER = "shoulder"
-    ELBOW = "elbow"
     WRIST_HAND = "wrist_hand"
 
     # Spine
     CERVICAL_SPINE = "cervical_spine"
-    THORACIC_SPINE = "thoracic_spine"
     LOWER_BACK = "lower_back"  # Lumbar
 
     # Lower body
@@ -189,22 +181,9 @@ class BodyRegion(Enum):
     KNEE = "knee"
     ANKLE_FOOT = "ankle_foot"
 
-    # Special
-    MENTAL = "mental"  # For MH conditions (generic)
-    MULTIPLE = "multiple"  # Polytrauma
-
-    # MH Condition-specific regions for evidence lookup
-    PTSD = "ptsd"
-    DEPRESSION = "depression"
-    ANXIETY = "anxiety"
-    ADJUSTMENT_DISORDER = "adjustment_disorder"
-
     # Legacy values for backward compatibility
     NECK = "cervical_spine"
     HIP = "hip_groin"
-    UPPER_BACK = "thoracic_spine"
-    SYSTEMIC = "multiple"
-    OTHER = "multiple"
 
 
 # =============================================================================
@@ -391,40 +370,25 @@ class EvidenceBase:
         return self._sources.get(source_id)
 
     def _injury_type_to_yaml_key(self, injury_type: InjuryType) -> str:
-        """Map InjuryType enum to YAML section key."""
+        """Map InjuryType enum to YAML section key (MSKI only - V2)."""
         mapping = {
             InjuryType.MSKI_MINOR: 'MSKI_minor',
             InjuryType.MSKI_MODERATE: 'MSKI_moderate',
             InjuryType.MSKI_MAJOR: 'MSKI_major',
             InjuryType.MSKI_SEVERE: 'MSKI_severe',
-            InjuryType.MH_MILD: 'MH_mild',
-            InjuryType.MH_MODERATE: 'MH_moderate',
-            InjuryType.MH_SEVERE: 'MH_severe',
         }
         return mapping.get(injury_type, 'MSKI_moderate')
 
     def _body_region_to_yaml_key(self, body_region: BodyRegion) -> str:
-        """Map BodyRegion enum to YAML section key."""
-        # YAML uses specific keys - verify they match evidence_base.yaml
+        """Map BodyRegion enum to YAML section key (MSKI only - V2)."""
         mapping = {
-            # MSKI body regions
             BodyRegion.KNEE: 'knee_acl',
             BodyRegion.LOWER_BACK: 'lower_back',
             BodyRegion.SHOULDER: 'shoulder',
             BodyRegion.ANKLE_FOOT: 'ankle_foot',
             BodyRegion.HIP_GROIN: 'hip_groin',
             BodyRegion.CERVICAL_SPINE: 'cervical_spine',
-            BodyRegion.THORACIC_SPINE: 'thoracic_spine',
             BodyRegion.WRIST_HAND: 'wrist_hand',
-            BodyRegion.ELBOW: 'elbow',
-            BodyRegion.HEAD_NECK: 'head_neck',
-            BodyRegion.MULTIPLE: 'multiple',
-            # MH conditions - map directly to condition keys
-            BodyRegion.MENTAL: 'ptsd',  # Default MH to PTSD
-            BodyRegion.PTSD: 'ptsd',
-            BodyRegion.DEPRESSION: 'depression',
-            BodyRegion.ANXIETY: 'anxiety',
-            BodyRegion.ADJUSTMENT_DISORDER: 'adjustment_disorder',
         }
         key = body_region.value if hasattr(body_region, 'value') else str(body_region)
         return mapping.get(body_region, key)
@@ -519,33 +483,9 @@ class RecoveryConfig:
             mnd_probability=0.50,
             description="Career-threatening, multiple surgeries"
         ),
-        "mh_mild": InjuryProfile(
-            base_recovery_months=(2, 4),
-            variance="Medium",
-            recurrence_risk=0.30,
-            mld_probability=0.15,
-            mnd_probability=0.02,
-            description="Adjustment disorders, mild anxiety"
-        ),
-        "mh_moderate": InjuryProfile(
-            base_recovery_months=(4, 9),
-            variance="High",
-            recurrence_risk=0.45,
-            mld_probability=0.55,
-            mnd_probability=0.15,
-            description="Depression, anxiety disorders"
-        ),
-        "mh_severe": InjuryProfile(
-            base_recovery_months=(9, 18),
-            variance="Very High",
-            recurrence_risk=0.55,
-            mld_probability=0.80,
-            mnd_probability=0.40,
-            description="PTSD, complex trauma, severe depression"
-        ),
     })
 
-    # Body region modifiers (multiplier on recovery time)
+    # Body region modifiers (multiplier on recovery time) - MSKI only
     body_region_modifiers: Dict[str, float] = field(default_factory=lambda: {
         "lower_back": 1.4,
         "knee": 1.3,
@@ -554,16 +494,6 @@ class RecoveryConfig:
         "cervical_spine": 1.3,
         "hip_groin": 1.25,
         "wrist_hand": 1.0,
-        "thoracic_spine": 1.15,
-        "mental": 1.5,
-        "multiple": 1.4,
-        "head_neck": 1.2,
-        "elbow": 1.0,
-        # MH conditions
-        "ptsd": 1.5,
-        "depression": 1.4,
-        "anxiety": 1.3,
-        "adjustment_disorder": 1.2,
     })
 
     # Age modifiers (multiplier on recovery time)

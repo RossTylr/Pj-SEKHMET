@@ -20,6 +20,326 @@ from config import (
 from bayesian_model import BayesianRecoveryModel, CaseInput, RecoveryPrediction
 from cox_model import CoxRecoveryModel, CaseInput as CoxCaseInput, CoxPrediction
 
+# XGBoost model (V2)
+try:
+    from xgb_model import XGBSurvivalModel, XGBPrediction
+    XGB_AVAILABLE = True
+except ImportError:
+    XGB_AVAILABLE = False
+    XGBSurvivalModel = None
+
+
+# ============================================================
+# V3 UI HELPER FUNCTIONS
+# ============================================================
+
+def get_recovery_months(pred):
+    """Helper to extract recovery months from prediction."""
+    if hasattr(pred, 'median_recovery_months'):
+        return pred.median_recovery_months
+    elif hasattr(pred, 'predicted_time_months'):
+        return pred.predicted_time_months
+    elif hasattr(pred, 'expected_recovery_months'):
+        return pred.expected_recovery_months
+    else:
+        return 6.0  # Default fallback
+
+
+def render_traffic_light_summary(prediction):
+    """Display traffic light summary for RTD likelihood at 3/6/12 months."""
+    st.subheader("🚦 RTD Likelihood")
+
+    # Get probabilities at key timepoints
+    if hasattr(prediction, 'prob_recovery_3mo'):
+        prob_3mo = prediction.prob_recovery_3mo
+        prob_6mo = prediction.prob_recovery_6mo
+        prob_12mo = prediction.prob_recovery_12mo
+    else:
+        # Estimate from median using exponential approximation
+        median = get_recovery_months(prediction)
+        prob_3mo = min(0.95, max(0.05, 1 - np.exp(-0.693 * 3 / median)))
+        prob_6mo = min(0.95, max(0.05, 1 - np.exp(-0.693 * 6 / median)))
+        prob_12mo = min(0.95, max(0.05, 1 - np.exp(-0.693 * 12 / median)))
+
+    def get_traffic_light(prob):
+        """Return emoji and label based on probability."""
+        if prob >= 0.70:
+            return "🟢", "Likely"
+        elif prob >= 0.40:
+            return "🟡", "Possible"
+        else:
+            return "🔴", "Unlikely"
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        emoji, label = get_traffic_light(prob_3mo)
+        st.markdown(f"""
+        <div style="text-align: center; padding: 1rem; background-color: #f8f9fa; border-radius: 0.5rem;">
+            <div style="font-size: 3rem;">{emoji}</div>
+            <div style="font-weight: bold; font-size: 1.2rem;">3 Months</div>
+            <div style="font-size: 1.5rem; font-weight: bold;">{prob_3mo:.0%}</div>
+            <div style="color: gray;">{label}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col2:
+        emoji, label = get_traffic_light(prob_6mo)
+        st.markdown(f"""
+        <div style="text-align: center; padding: 1rem; background-color: #f8f9fa; border-radius: 0.5rem;">
+            <div style="font-size: 3rem;">{emoji}</div>
+            <div style="font-weight: bold; font-size: 1.2rem;">6 Months</div>
+            <div style="font-size: 1.5rem; font-weight: bold;">{prob_6mo:.0%}</div>
+            <div style="color: gray;">{label}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col3:
+        emoji, label = get_traffic_light(prob_12mo)
+        st.markdown(f"""
+        <div style="text-align: center; padding: 1rem; background-color: #f8f9fa; border-radius: 0.5rem;">
+            <div style="font-size: 3rem;">{emoji}</div>
+            <div style="font-weight: bold; font-size: 1.2rem;">12 Months</div>
+            <div style="font-size: 1.5rem; font-weight: bold;">{prob_12mo:.0%}</div>
+            <div style="color: gray;">{label}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.caption("**Workforce planning**: 🟢 = Plan for RTD | 🟡 = Monitor closely | 🔴 = Arrange cover")
+
+
+def plot_survival_curve_with_ci(cox_model, case, prediction):
+    """Generate survival curve with confidence interval shading."""
+    # Get survival curve data
+    t, survival = cox_model.get_survival_curve(case, max_months=36)
+    recovery = 1 - survival  # Probability of having recovered
+
+    # Calculate CI bounds (using prediction intervals)
+    ci_factor = 0.25  # 25% relative uncertainty
+    recovery_upper = np.clip(recovery * (1 + ci_factor), 0, 1)
+    recovery_lower = np.clip(recovery * (1 - ci_factor), 0, 1)
+
+    fig = go.Figure()
+
+    # Confidence interval shading (add first so it's behind)
+    fig.add_trace(go.Scatter(
+        x=np.concatenate([t, t[::-1]]),
+        y=np.concatenate([recovery_upper, recovery_lower[::-1]]),
+        fill='toself',
+        fillcolor='rgba(46, 125, 50, 0.15)',
+        line=dict(color='rgba(255,255,255,0)'),
+        name='90% CI',
+        showlegend=True,
+        hoverinfo='skip'
+    ))
+
+    # Main recovery curve
+    fig.add_trace(go.Scatter(
+        x=t,
+        y=recovery,
+        mode='lines',
+        name='Recovery Probability',
+        line=dict(color='#2E7D32', width=3),
+    ))
+
+    # Median line
+    median = get_recovery_months(prediction)
+    fig.add_vline(
+        x=median,
+        line_dash="dash",
+        line_color="#FF9800",
+        annotation_text=f"Median: {median:.1f} mo",
+        annotation_position="top"
+    )
+
+    # Lower/Upper bound lines
+    if hasattr(prediction, 'recovery_lower_90'):
+        lower = prediction.recovery_lower_90
+        upper = prediction.recovery_upper_90
+    elif hasattr(prediction, 'lower_bound_months'):
+        lower = prediction.lower_bound_months
+        upper = prediction.upper_bound_months
+    else:
+        lower = median * 0.6
+        upper = median * 1.5
+
+    fig.add_vline(x=lower, line_dash="dot", line_color="#4CAF50",
+                  annotation_text=f"Best: {lower:.1f}", annotation_position="bottom left")
+    fig.add_vline(x=upper, line_dash="dot", line_color="#F44336",
+                  annotation_text=f"Worst: {upper:.1f}", annotation_position="bottom right")
+
+    # 50% probability reference line
+    fig.add_hline(y=0.5, line_dash="dot", line_color="gray", opacity=0.5)
+
+    # Key milestone markers (3, 6, 12 months)
+    for milestone in [3, 6, 12]:
+        if milestone <= 36:
+            idx = np.argmin(np.abs(t - milestone))
+            prob = recovery[idx]
+            fig.add_trace(go.Scatter(
+                x=[milestone],
+                y=[prob],
+                mode='markers+text',
+                marker=dict(size=10, color='#1976D2'),
+                text=[f'{prob:.0%}'],
+                textposition='top center',
+                name=f'{milestone}mo',
+                showlegend=False
+            ))
+
+    fig.update_layout(
+        title="Recovery Probability Over Time (with 90% CI)",
+        xaxis_title="Months Since Injury",
+        yaxis_title="Probability of Recovery",
+        yaxis_range=[0, 1],
+        xaxis_range=[0, 36],
+        template="plotly_white",
+        height=400,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    )
+
+    return fig
+
+
+def render_model_agreement(cox_model, xgb_model, case_dict, case_input):
+    """Show model agreement indicator when multiple models available."""
+    if xgb_model is None:
+        st.info("XGBoost model not available for comparison.")
+        return None
+
+    # Get predictions from both models
+    cox_pred = cox_model.predict(case_input)
+    cox_months = cox_pred.median_recovery_months
+
+    xgb_pred = xgb_model.predict(case_dict)
+    xgb_months = xgb_pred.predicted_time_months
+
+    # Calculate agreement
+    difference = abs(cox_months - xgb_months)
+    avg_months = (cox_months + xgb_months) / 2
+    agreement_pct = max(0, 100 - (difference / avg_months * 100))
+
+    # Determine status
+    if difference <= 1.5:
+        status = "high"
+        emoji = "✅"
+        message = "Models agree closely"
+        bg_color = "#e8f5e9"
+    elif difference <= 3.0:
+        status = "moderate"
+        emoji = "⚠️"
+        message = "Models show some divergence"
+        bg_color = "#fff3e0"
+    else:
+        status = "low"
+        emoji = "🔴"
+        message = "Models disagree - consider clinical review"
+        bg_color = "#ffebee"
+
+    # Display
+    st.markdown("### 🔄 Model Agreement")
+
+    col1, col2, col3 = st.columns([1, 1, 2])
+
+    with col1:
+        st.metric("Cox PH", f"{cox_months:.1f} mo")
+
+    with col2:
+        st.metric("XGBoost", f"{xgb_months:.1f} mo")
+
+    with col3:
+        st.markdown(f"""
+        <div style="padding: 0.5rem; border-radius: 0.5rem; background-color: {bg_color};">
+            <span style="font-size: 1.5rem;">{emoji}</span>
+            <strong>Agreement: {agreement_pct:.0f}%</strong><br/>
+            <span style="color: gray;">{message}</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+    if status == "low":
+        st.warning(f"""
+        **Models disagree by {difference:.1f} months**
+
+        Use Cox PH estimate ({cox_months:.1f} mo) as primary,
+        consider XGBoost ({xgb_months:.1f} mo) as alternative scenario.
+        """)
+
+    return {'cox_months': cox_months, 'xgb_months': xgb_months, 'agreement_pct': agreement_pct}
+
+
+def render_comparator_benchmark(case_dict, prediction, current_months):
+    """Compare current case to a typical/baseline case."""
+    st.subheader("📊 Comparison to Typical Case")
+
+    # Baseline is 30yo, no risk factors
+    baseline_months = 6.0  # Typical moderate knee injury
+
+    # Adjust baseline for injury type/region
+    injury_type = case_dict.get('injury_type', 'mski_moderate')
+    if hasattr(injury_type, 'value'):
+        injury_type = injury_type.value
+
+    if 'minor' in str(injury_type):
+        baseline_months = 2.0
+    elif 'severe' in str(injury_type):
+        baseline_months = 15.0
+    elif 'major' in str(injury_type):
+        baseline_months = 10.0
+
+    difference = current_months - baseline_months
+    diff_pct = (difference / baseline_months) * 100 if baseline_months > 0 else 0
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.markdown("**Typical 30yo**")
+        st.markdown("Same injury, no risk factors")
+        st.metric("Recovery", f"{baseline_months:.1f} mo")
+
+    with col2:
+        age = case_dict.get('age', 30)
+        st.markdown("**Your Case**")
+        st.markdown(f"Age {age}, with risk factors")
+        st.metric(
+            "Recovery",
+            f"{current_months:.1f} mo",
+            delta=f"{difference:+.1f} mo" if abs(difference) > 0.1 else None,
+            delta_color="inverse"
+        )
+
+    with col3:
+        st.markdown("**Difference**")
+        if difference > 0.5:
+            st.error(f"⬆️ {diff_pct:.0f}% slower")
+            st.caption("Risk factors adding time")
+        elif difference < -0.5:
+            st.success(f"⬇️ {abs(diff_pct):.0f}% faster")
+            st.caption("Better than typical")
+        else:
+            st.info("➡️ Same as typical")
+
+
+def render_body_selector_simple():
+    """Render body region selector with icons."""
+    region_options = {
+        "🦵 Knee": BodyRegion.KNEE,
+        "🔙 Lower Back": BodyRegion.LOWER_BACK,
+        "💪 Shoulder": BodyRegion.SHOULDER,
+        "🦶 Ankle/Foot": BodyRegion.ANKLE_FOOT,
+        "🦴 Hip/Groin": BodyRegion.HIP_GROIN,
+        "🦒 Cervical Spine": BodyRegion.CERVICAL_SPINE,
+        "✋ Wrist/Hand": BodyRegion.WRIST_HAND,
+    }
+
+    selected = st.selectbox(
+        "Body Region",
+        options=list(region_options.keys()),
+        format_func=lambda x: x,
+        help="Select the injured body region"
+    )
+
+    return region_options[selected]
+
 
 # ============================================================
 # PAGE CONFIG
@@ -39,6 +359,12 @@ if 'predictor' not in st.session_state:
     st.session_state.predictor = BayesianRecoveryModel(st.session_state.config)
 if 'cox_model' not in st.session_state:
     st.session_state.cox_model = CoxRecoveryModel()
+if 'xgb_model' not in st.session_state:
+    if XGB_AVAILABLE:
+        st.session_state.xgb_model = XGBSurvivalModel()
+        st.session_state.xgb_model.train(n_synthetic=5000)
+    else:
+        st.session_state.xgb_model = None
 if 'model_type' not in st.session_state:
     st.session_state.model_type = "Cox PH (Evidence-based)"
 
@@ -52,17 +378,31 @@ def render_sidebar():
 
     st.sidebar.title("⚙️ Configuration")
 
-    # Model selection
+    # Model selection (V2: 3 models)
     st.sidebar.subheader("Model Selection")
-    st.session_state.model_type = st.sidebar.selectbox(
-        "Prediction Model",
-        ["Cox PH (Evidence-based)", "Bayesian (Legacy)"],
-        index=0 if st.session_state.model_type == "Cox PH (Evidence-based)" else 1,
-        help="Cox PH model uses clinical evidence from 22 peer-reviewed sources"
+    model_options = ["Cox PH (Evidence-based)", "Bayesian (Clinician-adjustable)"]
+    if XGB_AVAILABLE and st.session_state.xgb_model is not None:
+        model_options.append("XGBoost (ML/SHAP)")
+
+    current_index = 0
+    if st.session_state.model_type in model_options:
+        current_index = model_options.index(st.session_state.model_type)
+
+    st.session_state.model_type = st.sidebar.radio(
+        "Select Model",
+        model_options,
+        index=current_index,
+        help="""
+        Cox PH: Published hazard ratios, clinical gold standard
+        Bayesian: Adjustable parameters for local calibration
+        XGBoost: ML model with SHAP explainability (research only)
+        """
     )
 
     if st.session_state.model_type == "Cox PH (Evidence-based)":
         st.sidebar.info(f"Evidence base v{st.session_state.cox_model.evidence.version}")
+    elif st.session_state.model_type == "XGBoost (ML/SHAP)":
+        st.sidebar.warning("Trained on synthetic data - research use only")
 
     st.sidebar.markdown("---")
 
@@ -180,80 +520,46 @@ def render_sidebar():
 # ============================================================
 
 def render_individual_tab():
-    """Individual case prediction"""
+    """Individual case prediction - MSKI only (V2)"""
 
-    st.header("🧑‍⚕️ Individual Recovery Prediction")
+    st.header("🦴 Individual MSKI Prediction")
 
-    # MSKI injury types and body regions
-    mski_injury_types = [
+    # MSKI injury types and body regions only (V2 - MH removed)
+    injury_types = [
         InjuryType.MSKI_MINOR, InjuryType.MSKI_MODERATE, InjuryType.MSKI_MAJOR, InjuryType.MSKI_SEVERE
     ]
-    mski_body_regions = [
+    body_regions = [
         BodyRegion.KNEE, BodyRegion.LOWER_BACK, BodyRegion.SHOULDER,
         BodyRegion.ANKLE_FOOT, BodyRegion.HIP_GROIN, BodyRegion.CERVICAL_SPINE,
         BodyRegion.WRIST_HAND
     ]
 
-    # MH injury types and conditions (body regions represent MH conditions)
-    mh_injury_types = [
-        InjuryType.MH_MILD, InjuryType.MH_MODERATE, InjuryType.MH_SEVERE
-    ]
-    mh_conditions = [
-        BodyRegion.PTSD, BodyRegion.DEPRESSION, BodyRegion.ANXIETY, BodyRegion.ADJUSTMENT_DISORDER
-    ]
-
     col1, col2 = st.columns([1, 2])
 
     with col1:
-        st.subheader("Case Details")
+        st.subheader("Injury Details")
 
-        # Injury category tabs
-        injury_category = st.radio(
-            "Injury Category",
-            ["MSKI", "MH"],
-            horizontal=True,
-            help="MSKI = Musculoskeletal Injury, MH = Mental Health"
+        # Body Region first, then Severity
+        body_region = st.selectbox(
+            "Body Region",
+            body_regions,
+            format_func=lambda x: x.name.replace('_', ' ').title()
         )
 
-        if injury_category == "MSKI":
-            # MSKI: Body Region first, then Severity
-            body_region = st.selectbox(
-                "Body Region",
-                mski_body_regions,
-                format_func=lambda x: x.name.replace('_', ' ').title()
-            )
+        injury_type = st.selectbox(
+            "Severity",
+            injury_types,
+            format_func=lambda x: x.display_name
+        )
 
-            injury_type = st.selectbox(
-                "Severity",
-                mski_injury_types,
-                format_func=lambda x: x.display_name
-            )
-        else:
-            # MH: Condition first, then Severity
-            body_region = st.selectbox(
-                "Condition",
-                mh_conditions,
-                format_func=lambda x: x.name.replace('_', ' ').title()
-            )
-
-            injury_type = st.selectbox(
-                "Severity",
-                mh_injury_types,
-                format_func=lambda x: x.display_name
-            )
+        prior_same_region = st.checkbox("Prior injury to same region?", help="HR 1.80")
 
         st.markdown("---")
         st.subheader("Demographics")
 
-        age = st.number_input("Age", 18, 60, 32)
+        age = st.number_input("Age", 18, 55, 30)
 
         months_since = st.number_input("Months since injury", 0, 24, 0)
-
-        prior_injuries = st.number_input("Prior Injury Count", 0, 20, 0)
-
-        prior_same_region = st.checkbox("Prior injury to same region/condition?")
-
-        receiving_treatment = st.checkbox("Receiving treatment?", value=True)
 
         # Risk Factors section
         st.markdown("---")
@@ -261,44 +567,158 @@ def render_individual_tab():
 
         # Lifestyle factors
         st.markdown("**Lifestyle**")
-        is_smoker = st.checkbox("Current smoker?")
+        is_smoker = st.checkbox("Current smoker?", help="HR 1.43")
+        high_alcohol = st.checkbox("High alcohol intake?", help="HR 1.25")
+        sleep_quality = st.select_slider(
+            "Sleep quality",
+            options=["Poor", "Fair", "Good"],
+            value="Good",
+            help="Poor sleep HR 1.30"
+        )
+        poor_sleep = (sleep_quality == "Poor")
 
-        # Occupation factors
-        st.markdown("**Occupation**")
-        occupation_risk = st.selectbox(
-            "Physical demand level",
-            ["Low", "Medium", "High"],
-            index=1,
-            help="Higher physical demand roles require longer RTD times"
+        # Occupation factors (V2 - replaces Trade)
+        st.markdown("**Occupational Health**")
+        oh_risk = st.select_slider(
+            "OH/Occupational Risk",
+            options=["Low", "Moderate", "High"],
+            value="Moderate",
+            help="Low: 1.0x | Moderate: 1.15x | High: 1.30x"
         )
 
         # BMI factors
         st.markdown("**BMI**")
-        bmi_category = st.selectbox(
-            "BMI Category",
-            ["Normal (18.5-24.9)", "Overweight (25-29.9)", "Obese (30+)"],
-            index=0
-        )
-
-        # MH comorbidity (only for MSKI)
-        if injury_category == "MSKI":
-            has_mh_comorbidity = st.checkbox("Mental health comorbidity?")
+        bmi = st.number_input("BMI", min_value=15.0, max_value=50.0, value=25.0, step=0.5)
+        if bmi < 18.5:
+            bmi_cat = "Underweight"
+        elif bmi < 25:
+            bmi_cat = "Normal"
+        elif bmi < 30:
+            bmi_cat = "Overweight"
+        elif bmi < 35:
+            bmi_cat = "Obese (Class 1)"
         else:
-            has_mh_comorbidity = False
+            bmi_cat = "Obese (Class 2+)"
+        st.caption(f"Category: {bmi_cat}")
 
-        # Set default trade for model compatibility (hidden from UI)
+        # Treatment
+        st.markdown("**Treatment**")
+        receiving_treatment = st.checkbox("Supervised rehabilitation?", value=True, help="HR 0.75")
+
+        # Hidden defaults for backward compatibility
         trade = Trade.GENERIC
+        prior_injuries = 1 if prior_same_region else 0
+        has_mh_comorbidity = False  # MH removed in V2
 
         predict_btn = st.button("🔮 Predict Recovery", type="primary", use_container_width=True)
     
     with col2:
         if predict_btn:
-            # Map occupation risk to severity score for model compatibility
-            severity_from_occupation = {"Low": 3, "Medium": 5, "High": 7}
-            severity = severity_from_occupation.get(occupation_risk, 5)
+            # Map OH risk to severity score for model compatibility
+            severity_from_oh = {"Low": 3, "Moderate": 5, "High": 7}
+            severity = severity_from_oh.get(oh_risk, 5)
 
-            # Use Cox model or Bayesian based on selection
-            if st.session_state.model_type == "Cox PH (Evidence-based)":
+            # Use Cox, XGBoost, or Bayesian based on selection
+            if st.session_state.model_type == "XGBoost (ML/SHAP)":
+                # XGBoost prediction (V2)
+                xgb_case = {
+                    'age': age,
+                    'injury_type': injury_type.value,
+                    'body_region': body_region.value,
+                    'oh_risk': oh_risk,
+                    'prior_same_region': 1 if prior_same_region else 0,
+                    'is_smoker': 1 if is_smoker else 0,
+                    'high_alcohol': 1 if high_alcohol else 0,
+                    'poor_sleep': 1 if poor_sleep else 0,
+                    'receiving_treatment': 1 if receiving_treatment else 0,
+                    'bmi': bmi,
+                }
+
+                xgb_pred = st.session_state.xgb_model.predict(xgb_case)
+
+                # V3: Traffic Light Summary (FIRST)
+                render_traffic_light_summary(xgb_pred)
+
+                st.divider()
+
+                # Display XGBoost results
+                st.subheader("📊 Prediction Results (XGBoost/SHAP)")
+
+                st.warning(xgb_pred.disclaimer)
+
+                # Key metrics
+                col_a, col_b, col_c = st.columns(3)
+
+                with col_a:
+                    st.metric(
+                        "Predicted Recovery",
+                        f"{xgb_pred.predicted_time_months} months"
+                    )
+                with col_b:
+                    st.metric(
+                        "Recovery Band",
+                        xgb_pred.recovery_band
+                    )
+                with col_c:
+                    st.metric(
+                        "90% Range",
+                        f"{xgb_pred.lower_bound_months}-{xgb_pred.upper_bound_months} mo"
+                    )
+
+                st.markdown("---")
+
+                # SHAP explainability
+                if xgb_pred.shap_values:
+                    st.subheader("🔍 SHAP Feature Importance")
+
+                    st.markdown("**Factors slowing recovery (positive SHAP):**")
+                    if xgb_pred.top_positive_factors:
+                        for factor, val in xgb_pred.top_positive_factors:
+                            st.markdown(f"- **{factor.replace('_', ' ').title()}**: +{val:.3f}")
+                    else:
+                        st.markdown("*None significant*")
+
+                    st.markdown("**Factors speeding recovery (negative SHAP):**")
+                    if xgb_pred.top_negative_factors:
+                        for factor, val in xgb_pred.top_negative_factors:
+                            st.markdown(f"- **{factor.replace('_', ' ').title()}**: {val:.3f}")
+                    else:
+                        st.markdown("*None significant*")
+
+                    # SHAP bar chart
+                    import plotly.express as px
+                    shap_df = pd.DataFrame([
+                        {"Feature": k.replace('_', ' ').title(), "SHAP": v}
+                        for k, v in xgb_pred.shap_values.items()
+                    ]).sort_values('SHAP', key=abs, ascending=True)
+
+                    fig_shap = px.bar(
+                        shap_df,
+                        x="SHAP",
+                        y="Feature",
+                        orientation='h',
+                        color="SHAP",
+                        color_continuous_scale=["green", "white", "red"],
+                        color_continuous_midpoint=0
+                    )
+                    fig_shap.add_vline(x=0, line_dash="dash", line_color="black")
+                    fig_shap.update_layout(height=400, title="SHAP Values (Feature Impact)")
+                    st.plotly_chart(fig_shap, use_container_width=True)
+
+                # Manager summary
+                st.subheader("📋 Line Manager Summary")
+
+                st.info(f"""
+                **Expected Return to Duty:** {xgb_pred.predicted_time_months} months (90% range: {xgb_pred.lower_bound_months}-{xgb_pred.upper_bound_months})
+
+                **Recovery Band:** {xgb_pred.recovery_band}
+
+                **Note:** This prediction uses an XGBoost model trained on synthetic data.
+                It captures non-linear interactions but has NOT been validated on real outcomes.
+                For clinical decisions, prefer the Cox PH model.
+                """)
+
+            elif st.session_state.model_type == "Cox PH (Evidence-based)":
                 # Create Cox case
                 cox_case = CoxCaseInput(
                     age=age,
@@ -316,8 +736,27 @@ def render_individual_tab():
                     multiple_tbi_history=False  # TBI removed from model
                 )
 
+                # Build case_dict for V3 features
+                case_dict = {
+                    'age': age,
+                    'injury_type': injury_type,
+                    'body_region': body_region,
+                    'oh_risk': oh_risk,
+                    'prior_same_region': prior_same_region,
+                    'is_smoker': is_smoker,
+                    'high_alcohol': high_alcohol,
+                    'poor_sleep': poor_sleep,
+                    'receiving_treatment': receiving_treatment,
+                    'bmi': bmi,
+                }
+
                 # Get Cox prediction
                 cox_prediction = st.session_state.cox_model.predict(cox_case)
+
+                # V3: Traffic Light Summary (FIRST)
+                render_traffic_light_summary(cox_prediction)
+
+                st.divider()
 
                 # Display Cox results
                 st.subheader("📊 Prediction Results (Cox PH Model)")
@@ -348,6 +787,28 @@ def render_individual_tab():
 
                 st.markdown("---")
 
+                # V3: Model Agreement (if XGBoost available)
+                if XGB_AVAILABLE and st.session_state.xgb_model is not None:
+                    with st.expander("🔄 Model Agreement Check", expanded=False):
+                        xgb_case_dict = {
+                            'age': age,
+                            'injury_type': injury_type.value,
+                            'body_region': body_region.value,
+                            'oh_risk': oh_risk,
+                            'prior_same_region': 1 if prior_same_region else 0,
+                            'is_smoker': 1 if is_smoker else 0,
+                            'high_alcohol': 1 if high_alcohol else 0,
+                            'poor_sleep': 1 if poor_sleep else 0,
+                            'receiving_treatment': 1 if receiving_treatment else 0,
+                            'bmi': bmi,
+                        }
+                        render_model_agreement(
+                            st.session_state.cox_model,
+                            st.session_state.xgb_model,
+                            xgb_case_dict,
+                            cox_case
+                        )
+
                 # Timeline with Return to Fitness vs Return to Duty
                 st.subheader("📅 Recovery Timeline")
 
@@ -358,6 +819,10 @@ def render_individual_tab():
                     st.markdown(f"**Return to Duty:** {cox_prediction.time_to_rtd_months} months")
                 with col_t3:
                     st.markdown(f"**90% Range:** {cox_prediction.recovery_lower_90}-{cox_prediction.recovery_upper_90} months")
+
+                # V3: Comparator Benchmark
+                st.markdown("---")
+                render_comparator_benchmark(case_dict, cox_prediction, cox_prediction.median_recovery_months)
 
             else:
                 # Create Bayesian case
@@ -378,6 +843,11 @@ def render_individual_tab():
 
                 # Get legacy prediction
                 prediction = st.session_state.predictor.predict(case)
+
+                # V3: Traffic Light Summary (FIRST)
+                render_traffic_light_summary(prediction)
+
+                st.divider()
 
                 # Display legacy results
                 st.subheader("📊 Prediction Results (Bayesian Model)")
@@ -421,36 +891,18 @@ def render_individual_tab():
             
             # Visualizations - shared between models
             if st.session_state.model_type == "Cox PH (Evidence-based)":
-                # Cox model visualizations
-                t, survival = st.session_state.cox_model.get_survival_curve(cox_case, 24)
-
-                fig = go.Figure()
-                fig.add_trace(go.Scatter(
-                    x=t,
-                    y=1 - survival,  # Convert survival to recovery probability
-                    mode='lines',
-                    name='Recovery Probability',
-                    line=dict(color='#2E86AB', width=3),
-                    fill='tozeroy',
-                    fillcolor='rgba(46, 134, 171, 0.2)'
-                ))
-
-                # Add threshold lines
-                fig.add_hline(y=0.5, line_dash="dash", line_color="orange",
-                             annotation_text="50%")
-                fig.add_hline(y=0.75, line_dash="dash", line_color="green",
-                             annotation_text="75%")
-                fig.add_hline(y=0.9, line_dash="dash", line_color="darkgreen",
-                             annotation_text="90%")
-
-                fig.update_layout(
-                    title="Cumulative Recovery Probability Over Time",
-                    xaxis_title="Months",
-                    yaxis_title="Probability of Recovery",
-                    yaxis_range=[0, 1],
-                    height=350
-                )
+                # V3: Cox model visualizations with CI shading
+                st.subheader("📈 Recovery Trajectory")
+                fig = plot_survival_curve_with_ci(st.session_state.cox_model, cox_case, cox_prediction)
                 st.plotly_chart(fig, use_container_width=True)
+
+                st.caption(f"""
+                **Reading this chart**: The green line shows expected recovery probability over time.
+                The shaded area represents uncertainty (90% CI).
+                Vertical lines mark best case ({cox_prediction.recovery_lower_90:.1f} mo),
+                median ({cox_prediction.median_recovery_months:.1f} mo),
+                and worst case ({cox_prediction.recovery_upper_90:.1f} mo).
+                """)
 
                 # Probability milestones
                 st.subheader("🎯 Recovery Milestones")
@@ -638,10 +1090,10 @@ def render_cohort_tab():
     if st.button("Generate Sample Cohort (10 cases)"):
         np.random.seed(42)
 
-        # Valid enum values for sampling
+        # Valid enum values for sampling (V2 - MSKI only, MH removed)
         valid_trades = [Trade.INFANTRY, Trade.SIGNALS, Trade.LOGISTICS, Trade.MEDIC, Trade.REME]
-        valid_injury_types = [InjuryType.MSKI_MINOR, InjuryType.MSKI_MODERATE, InjuryType.MSKI_MAJOR, InjuryType.MH_MILD, InjuryType.MH_MODERATE]
-        valid_body_regions = [BodyRegion.LOWER_BACK, BodyRegion.KNEE, BodyRegion.SHOULDER, BodyRegion.MENTAL, BodyRegion.MULTIPLE]
+        valid_injury_types = [InjuryType.MSKI_MINOR, InjuryType.MSKI_MODERATE, InjuryType.MSKI_MAJOR, InjuryType.MSKI_SEVERE]
+        valid_body_regions = [BodyRegion.LOWER_BACK, BodyRegion.KNEE, BodyRegion.SHOULDER, BodyRegion.ANKLE_FOOT, BodyRegion.HIP_GROIN]
         valid_jmes = [JMESStatus.MLD, JMESStatus.MND]
 
         cases = []

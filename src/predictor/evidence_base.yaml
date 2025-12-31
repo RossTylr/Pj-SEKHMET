@@ -1,19 +1,19 @@
 # ============================================================
 # SEKHMET Recovery Predictor – Clinical Evidence Base
 # ============================================================
-# Version: 1.2.0 (MSKI and MH - TBI removed)
+# Version: 2.0.0 (MSKI only - MH removed in V2)
 # Generated: 2025-01-01
 # Updated: 2025-01-01
 # Sources: Uploaded PDFs + peer-reviewed literature search
 # ============================================================
 
 metadata:
-  version: "1.2.0"
+  version: "2.0.0"
   last_updated: "2025-01-01"
-  total_sources: 22
-  description: "Clinical evidence for SEKHMET - MSKI and MH only (TBI removed)"
+  total_sources: 18
+  description: "Clinical evidence for SEKHMET - MSKI only (MH removed in V2)"
   priority_tiers:
-    tier_1: ["knee_acl", "lower_back", "ptsd"]
+    tier_1: ["knee_acl", "lower_back"]
     tier_2: ["shoulder", "ankle_foot"]
   inclusion_rule: "n >= 100 for primary calibration; <100 flagged as supplementary"
   population_priority: "UK military > allied military > civilian (with adjustment)"
@@ -472,205 +472,6 @@ injuries:
       stakeholder_explainer: |
         Severe wrist/hand injuries require prolonged recovery.
 
-  # ----------------------------------------------------------
-  # MENTAL HEALTH - MILD
-  # ----------------------------------------------------------
-  MH_mild:
-    ptsd:
-      median_recovery_months: 3.0
-      recovery_range_months: [2.0, 6.0]
-      time_to_fitness_months: 2.0
-      time_to_rtd_months: 3.0
-      prob_full_recovery: 0.70
-      prob_partial_recovery: 0.20
-      prob_not_recovered: 0.10
-      evidence_grade: "Moderate"
-      sources:
-        - kcmhr_2024
-      stakeholder_explainer: |
-        Mild PTSD with early intervention typically resolves within 2-6 months.
-        70% achieve full recovery with appropriate treatment.
-
-    depression:
-      median_recovery_months: 4.0
-      recovery_range_months: [2.0, 8.0]
-      time_to_fitness_months: 3.0
-      time_to_rtd_months: 4.0
-      prob_full_recovery: 0.65
-      prob_partial_recovery: 0.25
-      prob_not_recovered: 0.10
-      evidence_grade: "Moderate"
-      sources:
-        - kcmhr_2024
-        - kessler_2020
-      stakeholder_explainer: |
-        Mild depression often responds well to treatment within 2-8 months.
-
-    anxiety:
-      median_recovery_months: 3.0
-      recovery_range_months: [1.5, 6.0]
-      time_to_fitness_months: 2.0
-      time_to_rtd_months: 3.0
-      prob_full_recovery: 0.70
-      prob_partial_recovery: 0.20
-      prob_not_recovered: 0.10
-      evidence_grade: "Moderate"
-      sources:
-        - kcmhr_2024
-      stakeholder_explainer: |
-        Mild anxiety disorders typically respond well to treatment.
-
-    adjustment_disorder:
-      median_recovery_months: 2.0
-      recovery_range_months: [1.0, 4.0]
-      time_to_fitness_months: 1.5
-      time_to_rtd_months: 2.0
-      prob_full_recovery: 0.80
-      prob_partial_recovery: 0.15
-      prob_not_recovered: 0.05
-      evidence_grade: "Low"
-      sources:
-        - kcmhr_2024
-      stakeholder_explainer: |
-        Adjustment disorders typically resolve within 1-4 months
-        once the stressor is addressed.
-
-  # ----------------------------------------------------------
-  # MENTAL HEALTH - MODERATE
-  # ----------------------------------------------------------
-  MH_moderate:
-    ptsd:
-      median_recovery_months: 8.0
-      recovery_range_months: [6.0, 18.0]
-      time_to_fitness_months: 6.0
-      time_to_rtd_months: 8.0
-      prob_full_recovery: 0.35
-      prob_partial_recovery: 0.30
-      prob_not_recovered: 0.35
-      evidence_grade: "Moderate"
-      sources:
-        - kcmhr_2024
-        - hoge_2014
-        - kessler_2020
-      stakeholder_explainer: |
-        Moderate PTSD typically requires 6-18 months of treatment.
-        About 35% achieve full recovery, 35% have persistent symptoms.
-        UK military PTSD prevalence is approximately 6% (KCMHR).
-
-    depression:
-      median_recovery_months: 9.0
-      recovery_range_months: [6.0, 18.0]
-      time_to_fitness_months: 6.0
-      time_to_rtd_months: 9.0
-      prob_full_recovery: 0.40
-      prob_partial_recovery: 0.35
-      prob_not_recovered: 0.25
-      evidence_grade: "Moderate"
-      sources:
-        - kcmhr_2024
-        - kessler_2020
-      stakeholder_explainer: |
-        Moderate depression often requires 6-18 months of treatment.
-        Recurrence risk is significant - about 50% within 2 years.
-
-    anxiety:
-      median_recovery_months: 6.0
-      recovery_range_months: [4.0, 12.0]
-      time_to_fitness_months: 4.0
-      time_to_rtd_months: 6.0
-      prob_full_recovery: 0.50
-      prob_partial_recovery: 0.30
-      prob_not_recovered: 0.20
-      evidence_grade: "Moderate"
-      sources:
-        - kcmhr_2024
-      stakeholder_explainer: |
-        Moderate anxiety disorders require structured treatment,
-        typically CBT plus/minus medication.
-
-    adjustment_disorder:
-      median_recovery_months: 4.0
-      recovery_range_months: [2.0, 8.0]
-      time_to_fitness_months: 3.0
-      time_to_rtd_months: 4.0
-      prob_full_recovery: 0.65
-      prob_partial_recovery: 0.25
-      prob_not_recovered: 0.10
-      evidence_grade: "Low"
-      sources:
-        - kcmhr_2024
-      stakeholder_explainer: |
-        More persistent adjustment reactions may indicate
-        underlying vulnerability or ongoing stressors.
-
-  # ----------------------------------------------------------
-  # MENTAL HEALTH - SEVERE
-  # ----------------------------------------------------------
-  MH_severe:
-    ptsd:
-      median_recovery_months: 18.0
-      recovery_range_months: [9.0, 36.0]
-      time_to_fitness_months: 12.0
-      time_to_rtd_months: 18.0
-      prob_full_recovery: 0.20
-      prob_partial_recovery: 0.30
-      prob_not_recovered: 0.50
-      evidence_grade: "Moderate"
-      sources:
-        - kcmhr_2024
-        - liu_2025
-        - hoge_2014
-      stakeholder_explainer: |
-        Severe PTSD has prolonged recovery trajectories.
-        Many require intensive residential treatment.
-        50% may not return to full military duties.
-
-    depression:
-      median_recovery_months: 18.0
-      recovery_range_months: [12.0, 36.0]
-      time_to_fitness_months: 12.0
-      time_to_rtd_months: 18.0
-      prob_full_recovery: 0.25
-      prob_partial_recovery: 0.30
-      prob_not_recovered: 0.45
-      evidence_grade: "Moderate"
-      sources:
-        - kcmhr_2024
-        - kessler_2020
-      stakeholder_explainer: |
-        Severe/treatment-resistant depression requires
-        specialist intervention. Many cases become chronic.
-
-    anxiety:
-      median_recovery_months: 12.0
-      recovery_range_months: [6.0, 24.0]
-      time_to_fitness_months: 9.0
-      time_to_rtd_months: 12.0
-      prob_full_recovery: 0.30
-      prob_partial_recovery: 0.35
-      prob_not_recovered: 0.35
-      evidence_grade: "Low"
-      sources:
-        - kcmhr_2024
-      stakeholder_explainer: |
-        Severe anxiety disorders often have comorbidities
-        and require multimodal treatment.
-
-    adjustment_disorder:
-      median_recovery_months: 8.0
-      recovery_range_months: [4.0, 12.0]
-      time_to_fitness_months: 6.0
-      time_to_rtd_months: 8.0
-      prob_full_recovery: 0.45
-      prob_partial_recovery: 0.35
-      prob_not_recovered: 0.20
-      evidence_grade: "Low"
-      sources:
-        - kcmhr_2024
-      stakeholder_explainer: |
-        Severe adjustment reactions may evolve into
-        other diagnoses (PTSD, depression) over time.
-
 # ============================================================
 # RISK FACTORS
 # ============================================================
@@ -795,77 +596,26 @@ risk_factors:
     sources: ["olivotto_2025"]
     stakeholder_explainer: "Supervised rehabilitation accelerates recovery by ~25%."
 
-  mh_comorbidity:
-    effect_type: "hazard_ratio"
-    hr: 2.00
-    ci_95: [1.50, 2.67]
-    category: "clinical"
-    direction: "delays_recovery"
-    applies_to: ["MSKI_moderate", "MSKI_major", "MSKI_severe"]
-    sources: ["olivotto_2025"]
-    stakeholder_explainer: "Mental health comorbidity is the strongest predictor of poor MSKI outcomes."
-
-  # MH-SPECIFIC RISK FACTORS
-  trauma_exposure:
-    effect_type: "hazard_ratio"
-    hr: 1.35
-    ci_95: [1.10, 1.65]
-    category: "mh_clinical"
-    direction: "delays_recovery"
-    applies_to: ["MH_mild", "MH_moderate", "MH_severe"]
-    condition_specific: ["ptsd"]
-    sources: ["kcmhr_2024", "hoge_2014"]
-    stakeholder_explainer: "Combat/operational trauma exposure associated with more complex PTSD presentations."
-
-  low_social_support:
-    effect_type: "hazard_ratio"
-    hr: 1.40
-    ci_95: [1.15, 1.70]
-    category: "mh_social"
-    direction: "delays_recovery"
-    applies_to: ["MH_mild", "MH_moderate", "MH_severe"]
-    sources: ["kcmhr_2024"]
-    stakeholder_explainer: "Low social support significantly impairs mental health recovery."
-
-  moderate_social_support:
+  # OH/Occupational Risk (V2 - replaces Trade/Physical Demand)
+  oh_risk_moderate:
     effect_type: "hazard_ratio"
     hr: 1.15
-    ci_95: [0.95, 1.38]
-    category: "mh_social"
+    ci_95: [1.00, 1.32]
+    category: "occupation"
     direction: "delays_recovery"
-    applies_to: ["MH_mild", "MH_moderate", "MH_severe"]
-    sources: ["kcmhr_2024"]
-    stakeholder_explainer: "Moderate social support - some protective effect but not optimal."
+    applies_to: ["MSKI_moderate", "MSKI_major", "MSKI_severe"]
+    sources: ["olivotto_2025", "shaw_2019"]
+    stakeholder_explainer: "Moderate occupational risk - standard RTD pathway."
 
-  prior_mh_history:
+  oh_risk_high:
     effect_type: "hazard_ratio"
-    hr: 1.60
-    ci_95: [1.30, 1.97]
-    category: "mh_clinical"
+    hr: 1.30
+    ci_95: [1.10, 1.54]
+    category: "occupation"
     direction: "delays_recovery"
-    applies_to: ["MH_mild", "MH_moderate", "MH_severe"]
-    sources: ["kcmhr_2024", "kessler_2020"]
-    stakeholder_explainer: "Prior mental health episodes predict longer recovery and higher recurrence risk."
-
-  substance_use:
-    effect_type: "hazard_ratio"
-    hr: 1.50
-    ci_95: [1.20, 1.88]
-    category: "mh_lifestyle"
-    direction: "delays_recovery"
-    applies_to: ["MH_mild", "MH_moderate", "MH_severe"]
-    sources: ["kcmhr_2024"]
-    stakeholder_explainer: "Alcohol/substance misuse complicates treatment response and prolongs recovery."
-
-  poor_treatment_engagement:
-    effect_type: "hazard_ratio"
-    hr: 1.80
-    ci_95: [1.40, 2.31]
-    category: "mh_treatment"
-    direction: "delays_recovery"
-    applies_to: ["MH_moderate", "MH_severe"]
-    sources: ["kcmhr_2024"]
-    stakeholder_explainer: "Poor engagement with therapy significantly delays recovery."
+    applies_to: ["MSKI_moderate", "MSKI_major", "MSKI_severe"]
+    sources: ["olivotto_2025", "shaw_2019"]
+    stakeholder_explainer: "High occupational risk requires longer RTD even after clinical recovery."
 
 # ============================================================
 # SOURCE BIBLIOGRAPHY
@@ -958,39 +708,4 @@ sources:
     year: 2019
     study_type: "systematic_review"
 
-  hoge_2014:
-    authors: "Hoge CW, Grossman SH, Auchterlonie JL, et al."
-    title: "PTSD Treatment for Soldiers After Combat Deployment: Low Utilization of Mental Health Care and Reasons for Dropout"
-    journal: "Psychiatric Services"
-    year: 2014
-    doi: "10.1176/appi.ps.201300307"
-    study_type: "observational"
-    n: 25000
-    military_specific: true
-
-  kessler_2020:
-    authors: "Kessler RC"
-    title: "Posttraumatic Stress Disorder in the National Comorbidity Survey"
-    journal: "Current Psychiatry Reports"
-    year: 2020
-    study_type: "review"
-    military_specific: false
-
-  kcmhr_2024:
-    authors: "Sharp ML, Fear NT, Burdett H, et al."
-    title: "Health and Well-being of the UK Armed Forces: KCMHR Phase 4"
-    journal: "UK Office for Veterans Affairs / King's Centre for Military Health Research"
-    year: 2024
-    study_type: "longitudinal_cohort"
-    n: 8000
-    military_specific: true
-    uk_specific: true
-    note: "UK-specific PTSD prevalence 6%"
-
-  liu_2025:
-    authors: "Liu Y, Zhang X, Wang J, et al."
-    title: "Efficacy of treatments for PTSD: comprehensive meta-analysis"
-    journal: "Journal of Clinical Psychiatry"
-    year: 2025
-    study_type: "meta_analysis"
-    military_specific: false
+  # MH-specific sources removed in V2

@@ -78,17 +78,12 @@ logger = logging.getLogger(__name__)
 # MODEL CONSTANTS
 # =============================================================================
 
-# Weibull shape parameter by injury category
+# Weibull shape parameter for MSKI (V2 - MH removed)
 # Derived from clinical knowledge of recovery trajectories
 WEIBULL_SHAPE_PARAMS: Dict[str, float] = {
     # MSKI: k > 1, increasing hazard (healing accumulates)
     # Rationale: Tissue repair is progressive; longer time = more healing done
     'MSKI': 1.5,
-
-    # Mental Health: k ≈ 1, roughly constant hazard
-    # Rationale: Recovery less predictable, therapy response variable
-    # Some recover quickly, others plateau
-    'MH': 1.1,
 }
 
 
@@ -482,27 +477,21 @@ class CoxRecoveryModel:
         For recovery, k > 1 is appropriate: the longer you recover,
         the more likely you are to fully recover (healing accumulates).
         """
+        # V2: MSKI only
         if injury_type in [InjuryType.MSKI_MINOR, InjuryType.MSKI_MODERATE,
                           InjuryType.MSKI_MAJOR, InjuryType.MSKI_SEVERE]:
             return WEIBULL_SHAPE_PARAMS['MSKI']
 
-        elif injury_type in [InjuryType.MH_MILD, InjuryType.MH_MODERATE,
-                            InjuryType.MH_SEVERE]:
-            return WEIBULL_SHAPE_PARAMS['MH']
-
         else:
             return 1.5  # Default: increasing hazard
-    
+
     def _get_default_params(self, injury_type: InjuryType) -> InjuryParameters:
-        """Return default parameters when evidence base has no match."""
+        """Return default parameters when evidence base has no match (MSKI only - V2)."""
         defaults = {
             InjuryType.MSKI_MINOR: (2.0, 1.0, 4.0, 0.8, 0.15, 0.05),
             InjuryType.MSKI_MODERATE: (6.0, 3.0, 12.0, 0.6, 0.25, 0.15),
             InjuryType.MSKI_MAJOR: (12.0, 6.0, 18.0, 0.5, 0.30, 0.20),
             InjuryType.MSKI_SEVERE: (18.0, 12.0, 36.0, 0.4, 0.30, 0.30),
-            InjuryType.MH_MILD: (3.0, 1.0, 6.0, 0.7, 0.20, 0.10),
-            InjuryType.MH_MODERATE: (8.0, 6.0, 18.0, 0.35, 0.30, 0.35),
-            InjuryType.MH_SEVERE: (18.0, 12.0, 36.0, 0.2, 0.30, 0.50),
         }
         
         d = defaults.get(injury_type, (6.0, 3.0, 12.0, 0.5, 0.3, 0.2))
