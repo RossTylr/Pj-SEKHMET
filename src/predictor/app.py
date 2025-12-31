@@ -824,73 +824,6 @@ def render_individual_tab():
                 st.markdown("---")
                 render_comparator_benchmark(case_dict, cox_prediction, cox_prediction.median_recovery_months)
 
-            else:
-                # Create Bayesian case
-                case = CaseInput(
-                    age=age,
-                    trade=trade,
-                    injury_type=injury_type,
-                    body_region=body_region,
-                    severity_score=severity,
-                    prior_injury_count=prior_injuries,
-                    prior_same_region=prior_same_region,
-                    current_jmes=JMESStatus.MLD,  # Default JMES status (hidden from UI)
-                    months_since_injury=months_since,
-                    receiving_treatment=receiving_treatment,
-                    is_smoker=is_smoker,
-                    has_mh_comorbidity=has_mh_comorbidity
-                )
-
-                # Get legacy prediction
-                prediction = st.session_state.predictor.predict(case)
-
-                # V3: Traffic Light Summary (FIRST)
-                render_traffic_light_summary(prediction)
-
-                st.divider()
-
-                # Display legacy results
-                st.subheader("📊 Prediction Results (Bayesian Model)")
-
-                # Key metrics
-                col_a, col_b, col_c, col_d = st.columns(4)
-
-                with col_a:
-                    st.metric(
-                        "Expected Recovery",
-                        f"{prediction.expected_recovery_months} months"
-                    )
-                with col_b:
-                    st.metric(
-                        "Recovery Band",
-                        prediction.recovery_band.value.title()
-                    )
-                with col_c:
-                    st.metric(
-                        "Full Recovery Prob",
-                        f"{prediction.prob_full_recovery:.0%}"
-                    )
-                with col_d:
-                    st.metric(
-                        "Confidence",
-                        prediction.confidence_level
-                    )
-
-                st.markdown("---")
-
-                # Timeline
-                st.subheader("📅 Recovery Timeline")
-
-                col_t1, col_t2, col_t3 = st.columns(3)
-                with col_t1:
-                    st.markdown(f"**Optimistic:** {prediction.optimistic_months} months")
-                with col_t2:
-                    st.markdown(f"**Realistic:** {prediction.realistic_months} months")
-                with col_t3:
-                    st.markdown(f"**Pessimistic:** {prediction.pessimistic_months} months")
-            
-            # Visualizations - shared between models
-            if st.session_state.model_type == "Cox PH (Evidence-based)":
                 # V3: Cox model visualizations with CI shading
                 st.subheader("📈 Recovery Trajectory")
                 fig = plot_survival_curve_with_ci(st.session_state.cox_model, cox_case, cox_prediction)
@@ -979,7 +912,71 @@ def render_individual_tab():
                                 st.markdown(f"- {source_id}")
 
             else:
-                # Legacy heuristic model visualizations
+                # Create Bayesian case
+                case = CaseInput(
+                    age=age,
+                    trade=trade,
+                    injury_type=injury_type,
+                    body_region=body_region,
+                    severity_score=severity,
+                    prior_injury_count=prior_injuries,
+                    prior_same_region=prior_same_region,
+                    current_jmes=JMESStatus.MLD,  # Default JMES status (hidden from UI)
+                    months_since_injury=months_since,
+                    receiving_treatment=receiving_treatment,
+                    is_smoker=is_smoker,
+                    has_mh_comorbidity=has_mh_comorbidity
+                )
+
+                # Get legacy prediction
+                prediction = st.session_state.predictor.predict(case)
+
+                # V3: Traffic Light Summary (FIRST)
+                render_traffic_light_summary(prediction)
+
+                st.divider()
+
+                # Display legacy results
+                st.subheader("📊 Prediction Results (Bayesian Model)")
+
+                # Key metrics
+                col_a, col_b, col_c, col_d = st.columns(4)
+
+                with col_a:
+                    st.metric(
+                        "Expected Recovery",
+                        f"{prediction.expected_recovery_months} months"
+                    )
+                with col_b:
+                    st.metric(
+                        "Recovery Band",
+                        prediction.recovery_band.value.title()
+                    )
+                with col_c:
+                    st.metric(
+                        "Full Recovery Prob",
+                        f"{prediction.prob_full_recovery:.0%}"
+                    )
+                with col_d:
+                    st.metric(
+                        "Confidence",
+                        prediction.confidence_level
+                    )
+
+                st.markdown("---")
+
+                # Timeline
+                st.subheader("📅 Recovery Timeline")
+
+                col_t1, col_t2, col_t3 = st.columns(3)
+                with col_t1:
+                    st.markdown(f"**Optimistic:** {prediction.optimistic_months} months")
+                with col_t2:
+                    st.markdown(f"**Realistic:** {prediction.realistic_months} months")
+                with col_t3:
+                    st.markdown(f"**Pessimistic:** {prediction.pessimistic_months} months")
+
+                # Bayesian model visualizations
                 curve_data = st.session_state.predictor.generate_recovery_curve(case, 24)
                 curve_df = pd.DataFrame(curve_data)
 
