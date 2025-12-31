@@ -150,14 +150,20 @@ class InjuryType(Enum):
     MH_MODERATE = "mh_moderate"
     MH_SEVERE = "mh_severe"
 
-    # Traumatic Brain Injury (TBI)
-    TBI_MILD = "tbi_mild"          # mTBI / concussion
-    TBI_MODERATE = "tbi_moderate"
-    TBI_SEVERE = "tbi_severe"
-
     # Legacy values for backward compatibility
     ACUTE_MEDICAL = "mski_minor"
     OTHER = "mski_moderate"
+
+    @property
+    def display_name(self) -> str:
+        """Human-readable name for UI with proper capitalisation."""
+        # Split into category and severity
+        parts = self.value.split('_')
+        if len(parts) == 2:
+            category = parts[0].upper()  # MSKI or MH
+            severity = parts[1].title()  # Minor, Moderate, Major, Severe, Mild
+            return f"{category} {severity}"
+        return self.value.replace('_', ' ').title()
 
 
 class BodyRegion(Enum):
@@ -165,8 +171,7 @@ class BodyRegion(Enum):
     Anatomical regions for injury localisation.
 
     Maps to evidence base parameters (e.g., injuries.MSKI_moderate.knee_acl).
-    MENTAL region used for mental health conditions.
-    BRAIN region used for TBI.
+    For MH conditions, use condition-specific regions (PTSD, DEPRESSION, etc.).
     """
     # Upper body
     HEAD_NECK = "head_neck"
@@ -185,12 +190,16 @@ class BodyRegion(Enum):
     ANKLE_FOOT = "ankle_foot"
 
     # Special
-    MENTAL = "mental"  # For MH conditions
-    BRAIN = "brain"    # For TBI
+    MENTAL = "mental"  # For MH conditions (generic)
     MULTIPLE = "multiple"  # Polytrauma
 
+    # MH Condition-specific regions for evidence lookup
+    PTSD = "ptsd"
+    DEPRESSION = "depression"
+    ANXIETY = "anxiety"
+    ADJUSTMENT_DISORDER = "adjustment_disorder"
+
     # Legacy values for backward compatibility
-    HEAD = "brain"
     NECK = "cervical_spine"
     HIP = "hip_groin"
     UPPER_BACK = "thoracic_spine"
@@ -391,21 +400,17 @@ class EvidenceBase:
             InjuryType.MH_MILD: 'MH_mild',
             InjuryType.MH_MODERATE: 'MH_moderate',
             InjuryType.MH_SEVERE: 'MH_severe',
-            InjuryType.TBI_MILD: 'TBI_mild',
-            InjuryType.TBI_MODERATE: 'TBI_moderate',
-            InjuryType.TBI_SEVERE: 'TBI_severe',
         }
         return mapping.get(injury_type, 'MSKI_moderate')
 
     def _body_region_to_yaml_key(self, body_region: BodyRegion) -> str:
         """Map BodyRegion enum to YAML section key."""
-        # YAML uses specific keys like 'knee_acl', 'lower_back', 'ptsd', 'mtbi'
+        # YAML uses specific keys - verify they match evidence_base.yaml
         mapping = {
+            # MSKI body regions
             BodyRegion.KNEE: 'knee_acl',
             BodyRegion.LOWER_BACK: 'lower_back',
             BodyRegion.SHOULDER: 'shoulder',
-            BodyRegion.MENTAL: 'ptsd',  # MH conditions
-            BodyRegion.BRAIN: 'mtbi',   # TBI conditions
             BodyRegion.ANKLE_FOOT: 'ankle_foot',
             BodyRegion.HIP_GROIN: 'hip_groin',
             BodyRegion.CERVICAL_SPINE: 'cervical_spine',
@@ -414,8 +419,15 @@ class EvidenceBase:
             BodyRegion.ELBOW: 'elbow',
             BodyRegion.HEAD_NECK: 'head_neck',
             BodyRegion.MULTIPLE: 'multiple',
+            # MH conditions - map directly to condition keys
+            BodyRegion.MENTAL: 'ptsd',  # Default MH to PTSD
+            BodyRegion.PTSD: 'ptsd',
+            BodyRegion.DEPRESSION: 'depression',
+            BodyRegion.ANXIETY: 'anxiety',
+            BodyRegion.ADJUSTMENT_DISORDER: 'adjustment_disorder',
         }
-        return mapping.get(body_region, body_region.value)
+        key = body_region.value if hasattr(body_region, 'value') else str(body_region)
+        return mapping.get(body_region, key)
 
 
 # =============================================================================
@@ -531,30 +543,6 @@ class RecoveryConfig:
             mnd_probability=0.40,
             description="PTSD, complex trauma, severe depression"
         ),
-        "tbi_mild": InjuryProfile(
-            base_recovery_months=(0.5, 3),
-            variance="Medium",
-            recurrence_risk=0.15,
-            mld_probability=0.15,
-            mnd_probability=0.05,
-            description="Mild TBI / concussion"
-        ),
-        "tbi_moderate": InjuryProfile(
-            base_recovery_months=(3, 12),
-            variance="High",
-            recurrence_risk=0.25,
-            mld_probability=0.50,
-            mnd_probability=0.25,
-            description="Moderate TBI"
-        ),
-        "tbi_severe": InjuryProfile(
-            base_recovery_months=(12, 36),
-            variance="Very High",
-            recurrence_risk=0.40,
-            mld_probability=0.85,
-            mnd_probability=0.50,
-            description="Severe TBI"
-        ),
     })
 
     # Body region modifiers (multiplier on recovery time)
@@ -567,11 +555,15 @@ class RecoveryConfig:
         "hip_groin": 1.25,
         "wrist_hand": 1.0,
         "thoracic_spine": 1.15,
-        "brain": 1.2,
         "mental": 1.5,
         "multiple": 1.4,
         "head_neck": 1.2,
         "elbow": 1.0,
+        # MH conditions
+        "ptsd": 1.5,
+        "depression": 1.4,
+        "anxiety": 1.3,
+        "adjustment_disorder": 1.2,
     })
 
     # Age modifiers (multiplier on recovery time)

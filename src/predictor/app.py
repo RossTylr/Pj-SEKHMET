@@ -17,7 +17,7 @@ from config import (
     InjuryType, BodyRegion, JMESStatus, RecoveryBand, Trade, TradeCategory,
     get_age_band, get_recovery_band, get_trade_category, EvidenceBase
 )
-from recovery_model import RecoveryPredictor, CaseInput, RecoveryPrediction
+from bayesian_model import BayesianRecoveryModel, CaseInput, RecoveryPrediction
 from cox_model import CoxRecoveryModel, CaseInput as CoxCaseInput, CoxPrediction
 
 
@@ -36,7 +36,7 @@ st.set_page_config(
 if 'config' not in st.session_state:
     st.session_state.config = RecoveryConfig()
 if 'predictor' not in st.session_state:
-    st.session_state.predictor = RecoveryPredictor(st.session_state.config)
+    st.session_state.predictor = BayesianRecoveryModel(st.session_state.config)
 if 'cox_model' not in st.session_state:
     st.session_state.cox_model = CoxRecoveryModel()
 if 'model_type' not in st.session_state:
@@ -56,7 +56,7 @@ def render_sidebar():
     st.sidebar.subheader("Model Selection")
     st.session_state.model_type = st.sidebar.selectbox(
         "Prediction Model",
-        ["Cox PH (Evidence-based)", "Heuristic (Legacy)"],
+        ["Cox PH (Evidence-based)", "Bayesian (Legacy)"],
         index=0 if st.session_state.model_type == "Cox PH (Evidence-based)" else 1,
         help="Cox PH model uses clinical evidence from 22 peer-reviewed sources"
     )
@@ -149,7 +149,7 @@ def render_sidebar():
         profile.mld_probability = mld_prob
     
     # Update predictor
-    st.session_state.predictor = RecoveryPredictor(st.session_state.config)
+    st.session_state.predictor = BayesianRecoveryModel(st.session_state.config)
     
     st.sidebar.markdown("---")
     
@@ -171,7 +171,7 @@ def render_sidebar():
     with col2:
         if st.button("🔄 Reset"):
             st.session_state.config = RecoveryConfig()
-            st.session_state.predictor = RecoveryPredictor(st.session_state.config)
+            st.session_state.predictor = BayesianRecoveryModel(st.session_state.config)
             st.rerun()
 
 
@@ -184,27 +184,22 @@ def render_individual_tab():
 
     st.header("🧑‍⚕️ Individual Recovery Prediction")
 
-    # Get valid trades (exclude legacy aliases)
-    valid_trades = [
-        Trade.INFANTRY, Trade.ROYAL_MARINES, Trade.PARACHUTE_REGIMENT,
-        Trade.ARMOUR, Trade.ARTILLERY, Trade.COMBAT_ENGINEER,
-        Trade.SIGNALS, Trade.INTELLIGENCE, Trade.REME, Trade.MEDIC, Trade.MILITARY_POLICE,
-        Trade.LOGISTICS, Trade.AGC, Trade.DENTAL, Trade.VETERINARY, Trade.CHAPLAIN, Trade.GENERIC
+    # MSKI injury types and body regions
+    mski_injury_types = [
+        InjuryType.MSKI_MINOR, InjuryType.MSKI_MODERATE, InjuryType.MSKI_MAJOR, InjuryType.MSKI_SEVERE
+    ]
+    mski_body_regions = [
+        BodyRegion.KNEE, BodyRegion.LOWER_BACK, BodyRegion.SHOULDER,
+        BodyRegion.ANKLE_FOOT, BodyRegion.HIP_GROIN, BodyRegion.CERVICAL_SPINE,
+        BodyRegion.WRIST_HAND
     ]
 
-    # Get valid injury types (exclude legacy)
-    valid_injury_types = [
-        InjuryType.MSKI_MINOR, InjuryType.MSKI_MODERATE, InjuryType.MSKI_MAJOR, InjuryType.MSKI_SEVERE,
-        InjuryType.MH_MILD, InjuryType.MH_MODERATE, InjuryType.MH_SEVERE,
-        InjuryType.TBI_MILD, InjuryType.TBI_MODERATE, InjuryType.TBI_SEVERE
+    # MH injury types and conditions (body regions represent MH conditions)
+    mh_injury_types = [
+        InjuryType.MH_MILD, InjuryType.MH_MODERATE, InjuryType.MH_SEVERE
     ]
-
-    # Get valid body regions (exclude legacy)
-    valid_body_regions = [
-        BodyRegion.HEAD_NECK, BodyRegion.SHOULDER, BodyRegion.ELBOW, BodyRegion.WRIST_HAND,
-        BodyRegion.CERVICAL_SPINE, BodyRegion.THORACIC_SPINE, BodyRegion.LOWER_BACK,
-        BodyRegion.HIP_GROIN, BodyRegion.KNEE, BodyRegion.ANKLE_FOOT,
-        BodyRegion.MENTAL, BodyRegion.BRAIN, BodyRegion.MULTIPLE
+    mh_conditions = [
+        BodyRegion.PTSD, BodyRegion.DEPRESSION, BodyRegion.ANXIETY, BodyRegion.ADJUSTMENT_DISORDER
     ]
 
     col1, col2 = st.columns([1, 2])
@@ -212,63 +207,97 @@ def render_individual_tab():
     with col1:
         st.subheader("Case Details")
 
+        # Injury category tabs
+        injury_category = st.radio(
+            "Injury Category",
+            ["MSKI", "MH"],
+            horizontal=True,
+            help="MSKI = Musculoskeletal Injury, MH = Mental Health"
+        )
+
+        if injury_category == "MSKI":
+            # MSKI: Body Region first, then Severity
+            body_region = st.selectbox(
+                "Body Region",
+                mski_body_regions,
+                format_func=lambda x: x.name.replace('_', ' ').title()
+            )
+
+            injury_type = st.selectbox(
+                "Severity",
+                mski_injury_types,
+                format_func=lambda x: x.display_name
+            )
+        else:
+            # MH: Condition first, then Severity
+            body_region = st.selectbox(
+                "Condition",
+                mh_conditions,
+                format_func=lambda x: x.name.replace('_', ' ').title()
+            )
+
+            injury_type = st.selectbox(
+                "Severity",
+                mh_injury_types,
+                format_func=lambda x: x.display_name
+            )
+
+        st.markdown("---")
+        st.subheader("Demographics")
+
         age = st.number_input("Age", 18, 60, 32)
-
-        trade = st.selectbox(
-            "Trade",
-            valid_trades,
-            format_func=lambda t: f"{t.name.replace('_', ' ').title()} ({get_trade_category(t).name})"
-        )
-
-        injury_type = st.selectbox(
-            "Injury Type",
-            valid_injury_types,
-            format_func=lambda x: x.name.replace('_', ' ').title()
-        )
-
-        body_region = st.selectbox(
-            "Body Region",
-            valid_body_regions,
-            format_func=lambda x: x.name.replace('_', ' ').title()
-        )
-
-        severity = st.slider("Severity Score", 1, 10, 5)
-
-        prior_injuries = st.number_input("Prior Injury Count", 0, 20, 0)
-
-        prior_same_region = st.checkbox("Prior injury to same region?")
-
-        current_jmes = st.selectbox(
-            "Current JMES",
-            [JMESStatus.MFD, JMESStatus.MLD, JMESStatus.MND],
-            index=1,  # Default to MLD
-            format_func=lambda x: x.name
-        )
 
         months_since = st.number_input("Months since injury", 0, 24, 0)
 
+        prior_injuries = st.number_input("Prior Injury Count", 0, 20, 0)
+
+        prior_same_region = st.checkbox("Prior injury to same region/condition?")
+
         receiving_treatment = st.checkbox("Receiving treatment?", value=True)
 
-        # Additional Cox model inputs
-        if st.session_state.model_type == "Cox PH (Evidence-based)":
-            st.markdown("---")
-            st.markdown("**Risk Factors**")
-            is_smoker = st.checkbox("Current smoker?")
+        # Risk Factors section
+        st.markdown("---")
+        st.subheader("Risk Factors")
+
+        # Lifestyle factors
+        st.markdown("**Lifestyle**")
+        is_smoker = st.checkbox("Current smoker?")
+
+        # Occupation factors
+        st.markdown("**Occupation**")
+        occupation_risk = st.selectbox(
+            "Physical demand level",
+            ["Low", "Medium", "High"],
+            index=1,
+            help="Higher physical demand roles require longer RTD times"
+        )
+
+        # BMI factors
+        st.markdown("**BMI**")
+        bmi_category = st.selectbox(
+            "BMI Category",
+            ["Normal (18.5-24.9)", "Overweight (25-29.9)", "Obese (30+)"],
+            index=0
+        )
+
+        # MH comorbidity (only for MSKI)
+        if injury_category == "MSKI":
             has_mh_comorbidity = st.checkbox("Mental health comorbidity?")
-            if injury_type in [InjuryType.TBI_MILD, InjuryType.TBI_MODERATE, InjuryType.TBI_SEVERE]:
-                multiple_tbi = st.checkbox("History of 3+ TBIs?")
-            else:
-                multiple_tbi = False
         else:
-            is_smoker = False
             has_mh_comorbidity = False
-            multiple_tbi = False
+
+        # Set default trade for model compatibility (hidden from UI)
+        trade = Trade.GENERIC
 
         predict_btn = st.button("🔮 Predict Recovery", type="primary", use_container_width=True)
     
     with col2:
         if predict_btn:
-            # Use Cox model or heuristic based on selection
+            # Map occupation risk to severity score for model compatibility
+            severity_from_occupation = {"Low": 3, "Medium": 5, "High": 7}
+            severity = severity_from_occupation.get(occupation_risk, 5)
+
+            # Use Cox model or Bayesian based on selection
             if st.session_state.model_type == "Cox PH (Evidence-based)":
                 # Create Cox case
                 cox_case = CoxCaseInput(
@@ -279,12 +308,12 @@ def render_individual_tab():
                     severity_score=severity,
                     prior_injury_count=prior_injuries,
                     prior_same_region=prior_same_region,
-                    current_jmes=current_jmes,
+                    current_jmes=JMESStatus.MLD,  # Default JMES status (hidden from UI)
                     months_since_injury=float(months_since),
                     receiving_treatment=receiving_treatment,
                     is_smoker=is_smoker,
                     has_mh_comorbidity=has_mh_comorbidity,
-                    multiple_tbi_history=multiple_tbi
+                    multiple_tbi_history=False  # TBI removed from model
                 )
 
                 # Get Cox prediction
@@ -331,7 +360,7 @@ def render_individual_tab():
                     st.markdown(f"**90% Range:** {cox_prediction.recovery_lower_90}-{cox_prediction.recovery_upper_90} months")
 
             else:
-                # Create legacy case
+                # Create Bayesian case
                 case = CaseInput(
                     age=age,
                     trade=trade,
@@ -340,16 +369,18 @@ def render_individual_tab():
                     severity_score=severity,
                     prior_injury_count=prior_injuries,
                     prior_same_region=prior_same_region,
-                    current_jmes=current_jmes,
+                    current_jmes=JMESStatus.MLD,  # Default JMES status (hidden from UI)
                     months_since_injury=months_since,
-                    receiving_treatment=receiving_treatment
+                    receiving_treatment=receiving_treatment,
+                    is_smoker=is_smoker,
+                    has_mh_comorbidity=has_mh_comorbidity
                 )
 
                 # Get legacy prediction
                 prediction = st.session_state.predictor.predict(case)
 
                 # Display legacy results
-                st.subheader("📊 Prediction Results (Heuristic Model)")
+                st.subheader("📊 Prediction Results (Bayesian Model)")
 
                 # Key metrics
                 col_a, col_b, col_c, col_d = st.columns(4)
@@ -467,32 +498,6 @@ def render_individual_tab():
                     fig_factors.update_layout(height=300, xaxis_range=[0.5, 2.5])
                     st.plotly_chart(fig_factors, use_container_width=True)
 
-                # JMES outcomes
-                st.subheader("🏥 JMES Outcome Probabilities")
-
-                jmes_df = pd.DataFrame({
-                    "Outcome": ["Full Recovery (MFD)", "Partial Recovery", "Medical Discharge"],
-                    "Probability": [
-                        cox_prediction.prob_full_recovery,
-                        cox_prediction.prob_partial_recovery,
-                        cox_prediction.prob_medical_discharge
-                    ]
-                })
-
-                fig_jmes = px.pie(
-                    jmes_df,
-                    values="Probability",
-                    names="Outcome",
-                    color="Outcome",
-                    color_discrete_map={
-                        "Full Recovery (MFD)": "#2ecc71",
-                        "Partial Recovery": "#f39c12",
-                        "Medical Discharge": "#e74c3c"
-                    }
-                )
-                fig_jmes.update_layout(height=300)
-                st.plotly_chart(fig_jmes, use_container_width=True)
-
                 # Manager summary
                 st.subheader("📋 Line Manager Summary")
 
@@ -598,32 +603,6 @@ def render_individual_tab():
                 fig_factors.update_layout(height=300, xaxis_range=[0.5, 2.0])
                 st.plotly_chart(fig_factors, use_container_width=True)
 
-                # JMES outcomes
-                st.subheader("🏥 JMES Outcome Probabilities")
-
-                jmes_df = pd.DataFrame({
-                    "Outcome": ["Full Recovery (MFD)", "Partial Recovery", "Medical Discharge"],
-                    "Probability": [
-                        prediction.prob_full_recovery,
-                        prediction.prob_partial_recovery,
-                        prediction.prob_medical_discharge
-                    ]
-                })
-
-                fig_jmes = px.pie(
-                    jmes_df,
-                    values="Probability",
-                    names="Outcome",
-                    color="Outcome",
-                    color_discrete_map={
-                        "Full Recovery (MFD)": "#2ecc71",
-                        "Partial Recovery": "#f39c12",
-                        "Medical Discharge": "#e74c3c"
-                    }
-                )
-                fig_jmes.update_layout(height=300)
-                st.plotly_chart(fig_jmes, use_container_width=True)
-
                 # Manager summary
                 st.subheader("📋 Line Manager Summary")
 
@@ -725,10 +704,8 @@ def render_cohort_tab():
             pred_data.append({
                 "ID": f"SP-{i+1:03d}",
                 "Age": case.age,
-                "Trade": case.trade.value,
-                "Injury": case.injury_type.value,
-                "Region": case.body_region.value,
-                "JMES": case.current_jmes.value,
+                "Injury": case.injury_type.value.upper(),
+                "Region": case.body_region.value.replace('_', ' ').title(),
                 "Expected (mo)": pred.expected_recovery_months,
                 "Band": pred.recovery_band.value,
                 "Full Recovery %": f"{pred.prob_full_recovery:.0%}",

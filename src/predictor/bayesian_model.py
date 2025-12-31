@@ -1,7 +1,7 @@
 """
-Recovery Prediction Model
-=========================
-Core logic for predicting recovery trajectory.
+Bayesian Recovery Prediction Model
+===================================
+Core logic for predicting recovery trajectory using Bayesian estimates.
 """
 
 import numpy as np
@@ -74,10 +74,10 @@ class RecoveryPrediction:
     pessimistic_months: float  # 75th percentile
 
 
-class RecoveryPredictor:
+class BayesianRecoveryModel:
     """
-    Predicts recovery trajectory for injured service personnel.
-    
+    Predicts recovery trajectory for injured service personnel using Bayesian estimates.
+
     Uses configurable parameters that can be adjusted via UI.
     """
     
@@ -308,7 +308,7 @@ class RecoveryPredictor:
         # Variance from injury profile
         injury_profile = self.config.injury_profiles.get(
             case.injury_type.value,
-            self.config.injury_profiles["Other"]
+            self.config.injury_profiles.get("mski_moderate")
         )
         variance_map = {"Low": 0.15, "Medium": 0.25, "High": 0.35, "Very High": 0.50}
         variance = variance_map.get(injury_profile.variance, 0.25)

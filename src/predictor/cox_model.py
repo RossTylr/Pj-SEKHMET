@@ -84,19 +84,11 @@ WEIBULL_SHAPE_PARAMS: Dict[str, float] = {
     # MSKI: k > 1, increasing hazard (healing accumulates)
     # Rationale: Tissue repair is progressive; longer time = more healing done
     'MSKI': 1.5,
-    
+
     # Mental Health: k ≈ 1, roughly constant hazard
     # Rationale: Recovery less predictable, therapy response variable
     # Some recover quickly, others plateau
     'MH': 1.1,
-    
-    # TBI (mild): k > 1, but steeper than MSKI
-    # Rationale: Most mTBI resolves rapidly (90% by 3 months)
-    # Hazard of recovery is high early, remains elevated
-    'TBI_mild': 2.0,
-    
-    # TBI (moderate/severe): k ≈ 1, less predictable
-    'TBI_moderate': 1.2,
 }
 
 
@@ -493,17 +485,11 @@ class CoxRecoveryModel:
         if injury_type in [InjuryType.MSKI_MINOR, InjuryType.MSKI_MODERATE,
                           InjuryType.MSKI_MAJOR, InjuryType.MSKI_SEVERE]:
             return WEIBULL_SHAPE_PARAMS['MSKI']
-        
+
         elif injury_type in [InjuryType.MH_MILD, InjuryType.MH_MODERATE,
                             InjuryType.MH_SEVERE]:
             return WEIBULL_SHAPE_PARAMS['MH']
-        
-        elif injury_type == InjuryType.TBI_MILD:
-            return WEIBULL_SHAPE_PARAMS['TBI_mild']
-        
-        elif injury_type in [InjuryType.TBI_MODERATE, InjuryType.TBI_SEVERE]:
-            return WEIBULL_SHAPE_PARAMS['TBI_moderate']
-        
+
         else:
             return 1.5  # Default: increasing hazard
     
@@ -517,9 +503,6 @@ class CoxRecoveryModel:
             InjuryType.MH_MILD: (3.0, 1.0, 6.0, 0.7, 0.20, 0.10),
             InjuryType.MH_MODERATE: (8.0, 6.0, 18.0, 0.35, 0.30, 0.35),
             InjuryType.MH_SEVERE: (18.0, 12.0, 36.0, 0.2, 0.30, 0.50),
-            InjuryType.TBI_MILD: (1.0, 0.5, 3.0, 0.85, 0.10, 0.05),
-            InjuryType.TBI_MODERATE: (6.0, 3.0, 18.0, 0.5, 0.25, 0.25),
-            InjuryType.TBI_SEVERE: (18.0, 12.0, 36.0, 0.3, 0.30, 0.40),
         }
         
         d = defaults.get(injury_type, (6.0, 3.0, 12.0, 0.5, 0.3, 0.2))

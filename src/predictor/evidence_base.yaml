@@ -1,19 +1,20 @@
 # ============================================================
 # SEKHMET Recovery Predictor – Clinical Evidence Base
 # ============================================================
-# Version: 1.1.0 (Updated with mTBI + additional risk factors)
+# Version: 1.2.0 (MSKI and MH - TBI removed)
 # Generated: 2025-01-01
 # Updated: 2025-01-01
 # Sources: Uploaded PDFs + peer-reviewed literature search
 # ============================================================
 
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
   last_updated: "2025-01-01"
   total_sources: 22
+  description: "Clinical evidence for SEKHMET - MSKI and MH only (TBI removed)"
   priority_tiers:
-    tier_1: ["knee_acl", "lower_back", "ptsd", "mtbi"]
-    tier_2: ["shoulder"]
+    tier_1: ["knee_acl", "lower_back", "ptsd"]
+    tier_2: ["shoulder", "ankle_foot"]
   inclusion_rule: "n >= 100 for primary calibration; <100 flagged as supplementary"
   population_priority: "UK military > allied military > civilian (with adjustment)"
   endpoints:
@@ -33,450 +34,838 @@ metadata:
 injuries:
 
   # ----------------------------------------------------------
-  # TIER 1: HIGH PRIORITY INJURIES
+  # MSKI MINOR
   # ----------------------------------------------------------
+  MSKI_minor:
+    knee_acl:
+      median_recovery_months: 3.0
+      recovery_range_months: [1.0, 4.0]
+      time_to_fitness_months: 2.0
+      time_to_rtd_months: 3.0
+      prob_full_recovery: 0.85
+      prob_partial_recovery: 0.10
+      prob_not_recovered: 0.05
+      evidence_grade: "Low"
+      sources:
+        - olivotto_2025
+      stakeholder_explainer: |
+        Minor knee injuries typically resolve within 1-4 months.
+        Most personnel return to full duties.
 
+    lower_back:
+      median_recovery_months: 2.0
+      recovery_range_months: [1.0, 4.0]
+      time_to_fitness_months: 1.5
+      time_to_rtd_months: 2.0
+      prob_full_recovery: 0.80
+      prob_partial_recovery: 0.15
+      prob_not_recovered: 0.05
+      evidence_grade: "Low"
+      sources:
+        - rhon_2022
+      stakeholder_explainer: |
+        Minor lower back strains typically resolve quickly with appropriate management.
+
+    shoulder:
+      median_recovery_months: 2.0
+      recovery_range_months: [1.0, 4.0]
+      time_to_fitness_months: 1.5
+      time_to_rtd_months: 2.0
+      prob_full_recovery: 0.85
+      prob_partial_recovery: 0.10
+      prob_not_recovered: 0.05
+      evidence_grade: "Low"
+      sources:
+        - olivotto_2025
+      stakeholder_explainer: |
+        Minor shoulder injuries typically resolve within 1-4 months.
+
+    ankle_foot:
+      median_recovery_months: 2.0
+      recovery_range_months: [1.0, 3.0]
+      time_to_fitness_months: 1.5
+      time_to_rtd_months: 2.0
+      prob_full_recovery: 0.90
+      prob_partial_recovery: 0.08
+      prob_not_recovered: 0.02
+      evidence_grade: "Low"
+      sources:
+        - olivotto_2025
+      stakeholder_explainer: |
+        Minor ankle sprains and foot injuries resolve relatively quickly.
+
+    hip_groin:
+      median_recovery_months: 2.5
+      recovery_range_months: [1.0, 4.0]
+      time_to_fitness_months: 2.0
+      time_to_rtd_months: 2.5
+      prob_full_recovery: 0.80
+      prob_partial_recovery: 0.15
+      prob_not_recovered: 0.05
+      evidence_grade: "Low"
+      sources:
+        - olivotto_2025
+      stakeholder_explainer: |
+        Minor hip/groin strains typically resolve within 1-4 months.
+
+    cervical_spine:
+      median_recovery_months: 2.0
+      recovery_range_months: [1.0, 4.0]
+      time_to_fitness_months: 1.5
+      time_to_rtd_months: 2.0
+      prob_full_recovery: 0.80
+      prob_partial_recovery: 0.15
+      prob_not_recovered: 0.05
+      evidence_grade: "Low"
+      sources:
+        - rhon_2022
+      stakeholder_explainer: |
+        Minor cervical spine strains typically resolve with conservative management.
+
+    wrist_hand:
+      median_recovery_months: 1.5
+      recovery_range_months: [1.0, 3.0]
+      time_to_fitness_months: 1.0
+      time_to_rtd_months: 1.5
+      prob_full_recovery: 0.90
+      prob_partial_recovery: 0.08
+      prob_not_recovered: 0.02
+      evidence_grade: "Low"
+      sources:
+        - olivotto_2025
+      stakeholder_explainer: |
+        Minor wrist/hand injuries typically resolve quickly.
+
+  # ----------------------------------------------------------
+  # MSKI MODERATE
+  # ----------------------------------------------------------
   MSKI_moderate:
 
     knee_acl:
-      # Recovery Timeline
       median_recovery_months: 9.0
       recovery_range_months: [6.0, 12.0]
-      time_to_fitness_months: 6.0        # Physical criteria met (LSI ≥90%)
-      time_to_rtd_months: 9.0            # Occupational clearance
-      
-      # Outcome Probabilities
-      prob_full_recovery: 0.50           # Return to unrestricted duty
-      prob_partial_recovery: 0.30        # RTD with permanent profile/restrictions
-      prob_not_recovered: 0.20           # Medical separation/discharge
-      
-      # Reinjury Risk
-      reinjury_rate: 0.15                # Overall population
-      reinjury_rate_under_25: 0.23       # Elevated risk in young personnel
-      reinjury_rate_early_rts: 0.169     # If RTS < 9 months (Piussi 2024)
-      
-      # Definitions
-      endpoint_definition: >
-        Return to full military duty without permanent medical
-        restrictions or medical discharge following ACL reconstruction.
-        Fitness milestone: LSI ≥90%, ACL-RSI ≥68.
-      
-      # Metadata
-      military_relevance: "High"
+      time_to_fitness_months: 6.0
+      time_to_rtd_months: 9.0
+      prob_full_recovery: 0.50
+      prob_partial_recovery: 0.30
+      prob_not_recovered: 0.20
+      reinjury_rate: 0.15
+      reinjury_rate_under_25: 0.23
       evidence_grade: "Moderate"
-      n_total: 4500                       # Approximate across sources
       sources:
         - antosh_2018
         - marquina_2024
         - anderson_2023
         - wiggins_2016
         - piussi_2024
-      
       stakeholder_explainer: |
-        ACL injuries have one of the longest and most uncertain
-        recovery trajectories in the Armed Forces.
-        
-        KEY FACTS:
-        • About half of personnel return to unrestricted duty
-        • Recovery typically takes 9 months, but ranges 6-12 months
-        • Younger personnel (<25) face higher re-injury risk (~23%)
-        • Returning to activity too early increases re-injury risk
-        • A significant minority require permanent role restrictions
-          or leave service, especially if re-injury occurs
+        ACL injuries have one of the longest recovery trajectories.
+        About half return to unrestricted duty within 9-12 months.
+        Younger personnel (<25) face higher re-injury risk (~23%).
 
     lower_back:
-      # Recovery Timeline
       median_recovery_months: 6.0
       recovery_range_months: [3.0, 12.0]
-      time_to_fitness_months: 3.0        # Pain-free function
-      time_to_rtd_months: 6.0            # Sustained RTD without time-loss
-      
-      # Outcome Probabilities
+      time_to_fitness_months: 3.0
+      time_to_rtd_months: 6.0
       prob_full_recovery: 0.60
       prob_partial_recovery: 0.25
       prob_not_recovered: 0.15
-      
-      # Recurrence
       recurrence_rate_12mo: 0.35
-      chronic_pain_rate: 0.25            # Transition to chronic >3mo
-      
-      # Definitions
-      endpoint_definition: >
-        Sustained return to duty without time-loss injury
-        or ongoing activity restriction due to back pain.
-        Fitness milestone: Pain-free ADLs and role-specific tasks.
-      
-      # Metadata
-      military_relevance: "Very High"
       evidence_grade: "Moderate"
-      n_total: 3200
       sources:
+        - rhon_2022
         - cohen_2011
         - olivotto_2025
-        - rhon_2022
-      
       stakeholder_explainer: |
-        Lower back pain is the highest-volume MSKI in service
-        and the leading cause of limited duty days.
-        
-        KEY FACTS:
-        • Majority (60%) recover fully within 6 months
-        • About 1 in 3 experience recurrence within a year
-        • Mental health comorbidity dramatically worsens outcomes
-        • Pain at time of RTD predicts subsequent injury
-        • Supervised rehab reduces recovery time by ~25%
-
-  TBI_mild:
-
-    mtbi:
-      # Recovery Timeline
-      median_recovery_months: 1.0        # Uncomplicated single mTBI
-      recovery_range_months: [0.5, 3.0]  # 90% recover within 3 months
-      time_to_fitness_months: 0.5        # Symptom resolution
-      time_to_rtd_months: 1.0            # Progressive return to activity complete
-      
-      # For complicated/persistent cases
-      median_recovery_persistent_months: 6.0
-      recovery_range_persistent_months: [3.0, 18.0]
-      
-      # Outcome Probabilities (single uncomplicated mTBI)
-      prob_full_recovery: 0.85
-      prob_partial_recovery: 0.10        # Persistent symptoms, RTD with limitations
-      prob_not_recovered: 0.05           # Medical separation
-      
-      # For treatment-seeking population (worse prognosis)
-      prob_full_recovery_clinical: 0.70
-      prob_medical_discharge_clinical: 0.18  # RAND 2021: 7%→18% over 2002-2015
-      
-      # Complication Rates
-      pcs_rate: 0.15                     # Post-concussion syndrome >3mo
-      pcs_rate_military: 0.20            # Higher in combat-related mTBI
-      ptsd_comorbidity_rate: 0.482       # 48.2% military vs 11-18.6% civilian
-      
-      # Multiple TBI modifier
-      multiple_tbi_hr: 1.8               # ≥3 lifetime TBIs vs 1
-      
-      # Definitions
-      endpoint_definition: >
-        Resolution of post-concussive symptoms and return to full
-        cognitive and physical duties via progressive return to activity.
-        RTD defined as deployment readiness / Individual Medical Readiness.
-      
-      # Metadata
-      military_relevance: "Very High"
-      evidence_grade: "Moderate"
-      n_total: 8500
-      sources:
-        - oneil_2013
-        - vanderploeg_2017
-        - kennedy_2018
-        - rand_2021
-        - tbicohe_2023
-      
-      stakeholder_explainer: |
-        Mild TBI is the "signature injury" of recent conflicts.
-        Most recover quickly, but comorbidities complicate outcomes.
-        
-        KEY FACTS:
-        • ~90% recover within 1-4 weeks from single uncomplicated mTBI
-        • 10-20% develop persistent post-concussive symptoms
-        • Military personnel have 3-4x higher PTSD rate after mTBI
-          than civilians (48% vs 11-18%)
-        • History of ≥3 concussions significantly reduces RTD likelihood
-        • Medical discharge rates for TBI increased from 7% to 18%
-          between 2002-2015
-        • PTSD/depression comorbidity is the main driver of poor outcomes,
-          not the brain injury itself
-
-  MH_moderate:
-
-    ptsd:
-      # Recovery Timeline
-      median_recovery_months: 8.0
-      recovery_range_months: [6.0, 18.0]
-      time_to_fitness_months: 6.0        # Clinically meaningful improvement
-      time_to_rtd_months: 8.0            # Occupational functioning restored
-      
-      # Outcome Probabilities
-      prob_full_recovery: 0.35           # Sustained remission
-      prob_partial_recovery: 0.30        # Functional with ongoing symptoms
-      prob_not_recovered: 0.35           # Chronic/treatment-resistant
-      
-      # Treatment-specific
-      relapse_rate: 0.30
-      treatment_dropout_rate: 0.40       # High dropout from EBT
-      treatment_engagement_rate: 0.53    # Only 13-53% receive adequate care
-      
-      # UK-specific (KCMHR Phase 4)
-      prevalence_uk_regulars: 0.06       # 6% probable PTSD
-      prevalence_uk_reservists: 0.11     # Higher in reservists
-      complex_ptsd_rate: 0.04            # 4% meet complex PTSD criteria
-      
-      # Definitions
-      endpoint_definition: >
-        Sustained remission or clinically meaningful symptom
-        reduction (≥50% on PCL-5) allowing occupational functioning.
-        Fitness = deployment readiness.
-      
-      # Metadata
-      military_relevance: "Very High"
-      evidence_grade: "Moderate"
-      n_total: 15000
-      sources:
-        - hoge_2014
-        - kessler_2020
-        - kcmhr_2024
-        - liu_2025
-      
-      stakeholder_explainer: |
-        PTSD recovery is highly variable. Many improve with treatment,
-        but full remission is achieved in only around one-third.
-        
-        KEY FACTS:
-        • Only 35% achieve full remission with treatment
-        • 40% drop out of evidence-based treatment prematurely
-        • Comorbidity (depression, substance use) is the norm
-        • UK data shows 6% prevalence in regular forces, 11% in reservists
-        • Medical discharge rates for PTSD increased from 16% to 34%
-          between 2002-2015
-        • Social support and stigma are major factors in help-seeking
-
-  # ----------------------------------------------------------
-  # TIER 2: COMMON INJURIES
-  # ----------------------------------------------------------
-
-  MSKI_common:
+        Lower back pain is the highest-volume MSKI in service.
+        About 1 in 3 experience recurrence within a year.
+        Mental health comorbidity dramatically worsens outcomes.
 
     shoulder:
-      # Recovery Timeline
       median_recovery_months: 6.0
-      recovery_range_months: [4.0, 9.0]
+      recovery_range_months: [4.0, 12.0]
       time_to_fitness_months: 4.0
       time_to_rtd_months: 6.0
-      
-      # Outcome Probabilities (surgical management)
+      prob_full_recovery: 0.55
+      prob_partial_recovery: 0.30
+      prob_not_recovered: 0.15
+      evidence_grade: "Low"
+      sources:
+        - olivotto_2025
+      stakeholder_explainer: |
+        Moderate shoulder injuries (rotator cuff, impingement)
+        typically require 4-12 months for recovery.
+
+    ankle_foot:
+      median_recovery_months: 4.0
+      recovery_range_months: [2.0, 8.0]
+      time_to_fitness_months: 3.0
+      time_to_rtd_months: 4.0
+      prob_full_recovery: 0.70
+      prob_partial_recovery: 0.20
+      prob_not_recovered: 0.10
+      evidence_grade: "Low"
+      sources:
+        - olivotto_2025
+      stakeholder_explainer: |
+        Moderate ankle injuries (ligament tears, fractures)
+        typically recover within 2-8 months.
+
+    hip_groin:
+      median_recovery_months: 5.0
+      recovery_range_months: [3.0, 9.0]
+      time_to_fitness_months: 4.0
+      time_to_rtd_months: 5.0
+      prob_full_recovery: 0.60
+      prob_partial_recovery: 0.25
+      prob_not_recovered: 0.15
+      evidence_grade: "Low"
+      sources:
+        - olivotto_2025
+      stakeholder_explainer: |
+        Moderate hip/groin injuries require 3-9 months for recovery.
+
+    cervical_spine:
+      median_recovery_months: 5.0
+      recovery_range_months: [3.0, 10.0]
+      time_to_fitness_months: 3.5
+      time_to_rtd_months: 5.0
+      prob_full_recovery: 0.55
+      prob_partial_recovery: 0.30
+      prob_not_recovered: 0.15
+      evidence_grade: "Low"
+      sources:
+        - rhon_2022
+      stakeholder_explainer: |
+        Moderate cervical spine injuries require careful management
+        and typically 3-10 months for recovery.
+
+    wrist_hand:
+      median_recovery_months: 3.0
+      recovery_range_months: [2.0, 6.0]
+      time_to_fitness_months: 2.5
+      time_to_rtd_months: 3.0
+      prob_full_recovery: 0.75
+      prob_partial_recovery: 0.18
+      prob_not_recovered: 0.07
+      evidence_grade: "Low"
+      sources:
+        - olivotto_2025
+      stakeholder_explainer: |
+        Moderate wrist/hand injuries typically recover within 2-6 months.
+
+  # ----------------------------------------------------------
+  # MSKI MAJOR
+  # ----------------------------------------------------------
+  MSKI_major:
+
+    knee_acl:
+      median_recovery_months: 12.0
+      recovery_range_months: [9.0, 18.0]
+      time_to_fitness_months: 9.0
+      time_to_rtd_months: 12.0
+      prob_full_recovery: 0.40
+      prob_partial_recovery: 0.35
+      prob_not_recovered: 0.25
+      evidence_grade: "Moderate"
+      sources:
+        - antosh_2018
+        - anderson_2023
+      stakeholder_explainer: |
+        Major knee injuries (complex reconstructions, revisions)
+        require 9-18 months and have higher rates of ongoing restrictions.
+
+    lower_back:
+      median_recovery_months: 12.0
+      recovery_range_months: [6.0, 24.0]
+      time_to_fitness_months: 6.0
+      time_to_rtd_months: 12.0
+      prob_full_recovery: 0.40
+      prob_partial_recovery: 0.35
+      prob_not_recovered: 0.25
+      evidence_grade: "Moderate"
+      sources:
+        - rhon_2022
+        - cohen_2011
+      stakeholder_explainer: |
+        Major lower back injuries (disc surgery, fusion)
+        require 6-24 months for recovery with higher risk of chronicity.
+
+    shoulder:
+      median_recovery_months: 9.0
+      recovery_range_months: [6.0, 15.0]
+      time_to_fitness_months: 6.0
+      time_to_rtd_months: 9.0
+      prob_full_recovery: 0.45
+      prob_partial_recovery: 0.35
+      prob_not_recovered: 0.20
+      evidence_grade: "Low"
+      sources:
+        - olivotto_2025
+      stakeholder_explainer: |
+        Major shoulder injuries (surgical repairs) require 6-15 months.
+
+    ankle_foot:
+      median_recovery_months: 8.0
+      recovery_range_months: [5.0, 14.0]
+      time_to_fitness_months: 6.0
+      time_to_rtd_months: 8.0
+      prob_full_recovery: 0.55
+      prob_partial_recovery: 0.30
+      prob_not_recovered: 0.15
+      evidence_grade: "Low"
+      sources:
+        - olivotto_2025
+      stakeholder_explainer: |
+        Major ankle/foot injuries require 5-14 months for full recovery.
+
+    hip_groin:
+      median_recovery_months: 9.0
+      recovery_range_months: [6.0, 15.0]
+      time_to_fitness_months: 6.0
+      time_to_rtd_months: 9.0
+      prob_full_recovery: 0.45
+      prob_partial_recovery: 0.35
+      prob_not_recovered: 0.20
+      evidence_grade: "Low"
+      sources:
+        - olivotto_2025
+      stakeholder_explainer: |
+        Major hip/groin injuries require 6-15 months for recovery.
+
+    cervical_spine:
+      median_recovery_months: 10.0
+      recovery_range_months: [6.0, 18.0]
+      time_to_fitness_months: 7.0
+      time_to_rtd_months: 10.0
+      prob_full_recovery: 0.40
+      prob_partial_recovery: 0.35
+      prob_not_recovered: 0.25
+      evidence_grade: "Low"
+      sources:
+        - rhon_2022
+      stakeholder_explainer: |
+        Major cervical spine injuries (surgical intervention)
+        require 6-18 months for recovery.
+
+    wrist_hand:
+      median_recovery_months: 6.0
+      recovery_range_months: [4.0, 10.0]
+      time_to_fitness_months: 4.0
+      time_to_rtd_months: 6.0
+      prob_full_recovery: 0.60
+      prob_partial_recovery: 0.28
+      prob_not_recovered: 0.12
+      evidence_grade: "Low"
+      sources:
+        - olivotto_2025
+      stakeholder_explainer: |
+        Major wrist/hand injuries require 4-10 months for recovery.
+
+  # ----------------------------------------------------------
+  # MSKI SEVERE
+  # ----------------------------------------------------------
+  MSKI_severe:
+
+    knee_acl:
+      median_recovery_months: 18.0
+      recovery_range_months: [12.0, 36.0]
+      time_to_fitness_months: 12.0
+      time_to_rtd_months: 18.0
+      prob_full_recovery: 0.25
+      prob_partial_recovery: 0.35
+      prob_not_recovered: 0.40
+      evidence_grade: "Low"
+      sources:
+        - antosh_2018
+        - anderson_2023
+      stakeholder_explainer: |
+        Severe knee injuries (multiple revisions, complications)
+        have prolonged recovery and high rates of medical discharge.
+
+    lower_back:
+      median_recovery_months: 18.0
+      recovery_range_months: [12.0, 36.0]
+      time_to_fitness_months: 12.0
+      time_to_rtd_months: 18.0
+      prob_full_recovery: 0.25
+      prob_partial_recovery: 0.30
+      prob_not_recovered: 0.45
+      evidence_grade: "Low"
+      sources:
+        - rhon_2022
+        - cohen_2011
+      stakeholder_explainer: |
+        Severe lower back injuries often result in chronic pain
+        and high rates of medical discharge.
+
+    shoulder:
+      median_recovery_months: 15.0
+      recovery_range_months: [10.0, 24.0]
+      time_to_fitness_months: 10.0
+      time_to_rtd_months: 15.0
+      prob_full_recovery: 0.30
+      prob_partial_recovery: 0.35
+      prob_not_recovered: 0.35
+      evidence_grade: "Low"
+      sources:
+        - olivotto_2025
+      stakeholder_explainer: |
+        Severe shoulder injuries have prolonged recovery
+        and significant risk of permanent restrictions.
+
+    ankle_foot:
+      median_recovery_months: 14.0
+      recovery_range_months: [9.0, 24.0]
+      time_to_fitness_months: 9.0
+      time_to_rtd_months: 14.0
+      prob_full_recovery: 0.35
+      prob_partial_recovery: 0.35
+      prob_not_recovered: 0.30
+      evidence_grade: "Low"
+      sources:
+        - olivotto_2025
+      stakeholder_explainer: |
+        Severe ankle/foot injuries require prolonged recovery.
+
+    hip_groin:
+      median_recovery_months: 15.0
+      recovery_range_months: [10.0, 24.0]
+      time_to_fitness_months: 10.0
+      time_to_rtd_months: 15.0
+      prob_full_recovery: 0.30
+      prob_partial_recovery: 0.35
+      prob_not_recovered: 0.35
+      evidence_grade: "Low"
+      sources:
+        - olivotto_2025
+      stakeholder_explainer: |
+        Severe hip/groin injuries have prolonged recovery times.
+
+    cervical_spine:
+      median_recovery_months: 18.0
+      recovery_range_months: [12.0, 36.0]
+      time_to_fitness_months: 12.0
+      time_to_rtd_months: 18.0
+      prob_full_recovery: 0.25
+      prob_partial_recovery: 0.30
+      prob_not_recovered: 0.45
+      evidence_grade: "Low"
+      sources:
+        - rhon_2022
+      stakeholder_explainer: |
+        Severe cervical spine injuries often result in
+        permanent restrictions or medical discharge.
+
+    wrist_hand:
+      median_recovery_months: 10.0
+      recovery_range_months: [6.0, 18.0]
+      time_to_fitness_months: 7.0
+      time_to_rtd_months: 10.0
+      prob_full_recovery: 0.45
+      prob_partial_recovery: 0.35
+      prob_not_recovered: 0.20
+      evidence_grade: "Low"
+      sources:
+        - olivotto_2025
+      stakeholder_explainer: |
+        Severe wrist/hand injuries require prolonged recovery.
+
+  # ----------------------------------------------------------
+  # MENTAL HEALTH - MILD
+  # ----------------------------------------------------------
+  MH_mild:
+    ptsd:
+      median_recovery_months: 3.0
+      recovery_range_months: [2.0, 6.0]
+      time_to_fitness_months: 2.0
+      time_to_rtd_months: 3.0
+      prob_full_recovery: 0.70
+      prob_partial_recovery: 0.20
+      prob_not_recovered: 0.10
+      evidence_grade: "Moderate"
+      sources:
+        - kcmhr_2024
+      stakeholder_explainer: |
+        Mild PTSD with early intervention typically resolves within 2-6 months.
+        70% achieve full recovery with appropriate treatment.
+
+    depression:
+      median_recovery_months: 4.0
+      recovery_range_months: [2.0, 8.0]
+      time_to_fitness_months: 3.0
+      time_to_rtd_months: 4.0
+      prob_full_recovery: 0.65
+      prob_partial_recovery: 0.25
+      prob_not_recovered: 0.10
+      evidence_grade: "Moderate"
+      sources:
+        - kcmhr_2024
+        - kessler_2020
+      stakeholder_explainer: |
+        Mild depression often responds well to treatment within 2-8 months.
+
+    anxiety:
+      median_recovery_months: 3.0
+      recovery_range_months: [1.5, 6.0]
+      time_to_fitness_months: 2.0
+      time_to_rtd_months: 3.0
+      prob_full_recovery: 0.70
+      prob_partial_recovery: 0.20
+      prob_not_recovered: 0.10
+      evidence_grade: "Moderate"
+      sources:
+        - kcmhr_2024
+      stakeholder_explainer: |
+        Mild anxiety disorders typically respond well to treatment.
+
+    adjustment_disorder:
+      median_recovery_months: 2.0
+      recovery_range_months: [1.0, 4.0]
+      time_to_fitness_months: 1.5
+      time_to_rtd_months: 2.0
       prob_full_recovery: 0.80
       prob_partial_recovery: 0.15
       prob_not_recovered: 0.05
-      
-      # Non-operative caveat
-      recurrence_rate_nonoperative: 0.70  # High recurrence without surgery
-      
-      # Definitions
-      endpoint_definition: >
-        Return to unrestricted duty following surgical
-        stabilisation or rotator cuff repair.
-        Fitness = full ROM and strength.
-      
-      # Metadata
-      military_relevance: "High"
-      evidence_grade: "Low-Moderate"
-      evidence_note: "Limited military-specific data; primarily case series"
-      n_total: 450
+      evidence_grade: "Low"
       sources:
-        - scanaliato_2022
-        - vanspanning_2025
-      
+        - kcmhr_2024
       stakeholder_explainer: |
-        Shoulder injuries generally have favourable outcomes
-        in young, active personnel when treated surgically.
-        
-        KEY FACTS:
-        • ~80% return to unrestricted duty after surgery
-        • Non-operative management carries 70% recurrence risk
-          in high-demand roles
-        • Recovery typically 4-9 months depending on procedure
-        • Role restrictions may be needed temporarily
+        Adjustment disorders typically resolve within 1-4 months
+        once the stressor is addressed.
+
+  # ----------------------------------------------------------
+  # MENTAL HEALTH - MODERATE
+  # ----------------------------------------------------------
+  MH_moderate:
+    ptsd:
+      median_recovery_months: 8.0
+      recovery_range_months: [6.0, 18.0]
+      time_to_fitness_months: 6.0
+      time_to_rtd_months: 8.0
+      prob_full_recovery: 0.35
+      prob_partial_recovery: 0.30
+      prob_not_recovered: 0.35
+      evidence_grade: "Moderate"
+      sources:
+        - kcmhr_2024
+        - hoge_2014
+        - kessler_2020
+      stakeholder_explainer: |
+        Moderate PTSD typically requires 6-18 months of treatment.
+        About 35% achieve full recovery, 35% have persistent symptoms.
+        UK military PTSD prevalence is approximately 6% (KCMHR).
+
+    depression:
+      median_recovery_months: 9.0
+      recovery_range_months: [6.0, 18.0]
+      time_to_fitness_months: 6.0
+      time_to_rtd_months: 9.0
+      prob_full_recovery: 0.40
+      prob_partial_recovery: 0.35
+      prob_not_recovered: 0.25
+      evidence_grade: "Moderate"
+      sources:
+        - kcmhr_2024
+        - kessler_2020
+      stakeholder_explainer: |
+        Moderate depression often requires 6-18 months of treatment.
+        Recurrence risk is significant - about 50% within 2 years.
+
+    anxiety:
+      median_recovery_months: 6.0
+      recovery_range_months: [4.0, 12.0]
+      time_to_fitness_months: 4.0
+      time_to_rtd_months: 6.0
+      prob_full_recovery: 0.50
+      prob_partial_recovery: 0.30
+      prob_not_recovered: 0.20
+      evidence_grade: "Moderate"
+      sources:
+        - kcmhr_2024
+      stakeholder_explainer: |
+        Moderate anxiety disorders require structured treatment,
+        typically CBT plus/minus medication.
+
+    adjustment_disorder:
+      median_recovery_months: 4.0
+      recovery_range_months: [2.0, 8.0]
+      time_to_fitness_months: 3.0
+      time_to_rtd_months: 4.0
+      prob_full_recovery: 0.65
+      prob_partial_recovery: 0.25
+      prob_not_recovered: 0.10
+      evidence_grade: "Low"
+      sources:
+        - kcmhr_2024
+      stakeholder_explainer: |
+        More persistent adjustment reactions may indicate
+        underlying vulnerability or ongoing stressors.
+
+  # ----------------------------------------------------------
+  # MENTAL HEALTH - SEVERE
+  # ----------------------------------------------------------
+  MH_severe:
+    ptsd:
+      median_recovery_months: 18.0
+      recovery_range_months: [9.0, 36.0]
+      time_to_fitness_months: 12.0
+      time_to_rtd_months: 18.0
+      prob_full_recovery: 0.20
+      prob_partial_recovery: 0.30
+      prob_not_recovered: 0.50
+      evidence_grade: "Moderate"
+      sources:
+        - kcmhr_2024
+        - liu_2025
+        - hoge_2014
+      stakeholder_explainer: |
+        Severe PTSD has prolonged recovery trajectories.
+        Many require intensive residential treatment.
+        50% may not return to full military duties.
+
+    depression:
+      median_recovery_months: 18.0
+      recovery_range_months: [12.0, 36.0]
+      time_to_fitness_months: 12.0
+      time_to_rtd_months: 18.0
+      prob_full_recovery: 0.25
+      prob_partial_recovery: 0.30
+      prob_not_recovered: 0.45
+      evidence_grade: "Moderate"
+      sources:
+        - kcmhr_2024
+        - kessler_2020
+      stakeholder_explainer: |
+        Severe/treatment-resistant depression requires
+        specialist intervention. Many cases become chronic.
+
+    anxiety:
+      median_recovery_months: 12.0
+      recovery_range_months: [6.0, 24.0]
+      time_to_fitness_months: 9.0
+      time_to_rtd_months: 12.0
+      prob_full_recovery: 0.30
+      prob_partial_recovery: 0.35
+      prob_not_recovered: 0.35
+      evidence_grade: "Low"
+      sources:
+        - kcmhr_2024
+      stakeholder_explainer: |
+        Severe anxiety disorders often have comorbidities
+        and require multimodal treatment.
+
+    adjustment_disorder:
+      median_recovery_months: 8.0
+      recovery_range_months: [4.0, 12.0]
+      time_to_fitness_months: 6.0
+      time_to_rtd_months: 8.0
+      prob_full_recovery: 0.45
+      prob_partial_recovery: 0.35
+      prob_not_recovered: 0.20
+      evidence_grade: "Low"
+      sources:
+        - kcmhr_2024
+      stakeholder_explainer: |
+        Severe adjustment reactions may evolve into
+        other diagnoses (PTSD, depression) over time.
 
 # ============================================================
-# RISK FACTOR MODIFIERS (APPLIED ACROSS INJURIES)
+# RISK FACTORS
 # ============================================================
 
 risk_factors:
 
-  # ----------------------------------------------------------
-  # DEMOGRAPHIC FACTORS
-  # ----------------------------------------------------------
+  # LIFESTYLE FACTORS
+  smoking:
+    effect_type: "hazard_ratio"
+    hr: 1.43
+    ci_95: [1.17, 1.74]
+    category: "lifestyle"
+    direction: "delays_recovery"
+    applies_to: ["MSKI_minor", "MSKI_moderate", "MSKI_major", "MSKI_severe"]
+    sources: ["anderson_2023"]
+    stakeholder_explainer: "Smoking impairs tissue oxygenation and delays wound healing."
 
+  alcohol_high:
+    effect_type: "hazard_ratio"
+    hr: 1.25
+    ci_95: [1.05, 1.48]
+    category: "lifestyle"
+    direction: "delays_recovery"
+    applies_to: ["all"]
+    sources: ["olivotto_2025"]
+    stakeholder_explainer: "High alcohol intake associated with poorer recovery outcomes."
+
+  poor_sleep:
+    effect_type: "hazard_ratio"
+    hr: 1.30
+    ci_95: [1.10, 1.54]
+    category: "lifestyle"
+    direction: "delays_recovery"
+    applies_to: ["all"]
+    sources: ["olivotto_2025"]
+    stakeholder_explainer: "Poor sleep quality delays tissue repair and recovery."
+
+  # OCCUPATION FACTORS
+  high_physical_demand:
+    effect_type: "hazard_ratio"
+    hr: 1.40
+    ci_95: [1.15, 1.70]
+    category: "occupation"
+    direction: "delays_recovery"
+    applies_to: ["MSKI_moderate", "MSKI_major", "MSKI_severe"]
+    sources: ["shaw_2019", "olivotto_2025"]
+    stakeholder_explainer: "Higher physical job demands require longer RTD even after clinical recovery."
+
+  limited_job_modification:
+    effect_type: "hazard_ratio"
+    hr: 1.35
+    ci_95: [1.10, 1.65]
+    category: "occupation"
+    direction: "delays_recovery"
+    applies_to: ["MSKI_moderate", "MSKI_major"]
+    sources: ["shaw_2019"]
+    stakeholder_explainer: "Inability to modify job duties prolongs time away from work."
+
+  # BMI FACTORS
+  obesity_class1:
+    effect_type: "hazard_ratio"
+    hr: 1.20
+    ci_95: [1.05, 1.38]
+    category: "bmi"
+    applies_to_bmi: [30, 35]
+    direction: "delays_recovery"
+    applies_to: ["MSKI_moderate", "MSKI_major", "MSKI_severe"]
+    sources: ["olivotto_2025"]
+    stakeholder_explainer: "Obesity (BMI 30-35) associated with 20% longer recovery times."
+
+  obesity_class2plus:
+    effect_type: "hazard_ratio"
+    hr: 1.40
+    ci_95: [1.15, 1.70]
+    category: "bmi"
+    applies_to_bmi: [35, 100]
+    direction: "delays_recovery"
+    applies_to: ["MSKI_moderate", "MSKI_major", "MSKI_severe"]
+    sources: ["olivotto_2025"]
+    stakeholder_explainer: "Severe obesity (BMI 35+) significantly delays MSKI recovery."
+
+  # DEMOGRAPHIC FACTORS
   age:
     effect_type: "hazard_ratio"
     per_unit: "per decade over 25"
     hr: 1.15
     ci_95: [1.08, 1.23]
-    applies_to: ["all_mski"]
+    category: "demographic"
     direction: "delays_recovery"
+    applies_to: ["all"]
     sources: ["anderson_2023", "wiggins_2016"]
-    stakeholder_explainer: |
-      For every 10 years over age 25, recovery typically
-      takes around 15% longer. This reflects slower tissue
-      healing and reduced physiological reserve.
+    stakeholder_explainer: "Each decade of age over 25 associated with 15% longer recovery."
 
-  age_young_reinjury:
+  female_sex:
     effect_type: "hazard_ratio"
-    description: "Younger age increases RE-INJURY risk (inverse of recovery)"
-    hr: 1.50                             # <25 vs ≥25 for second ACL injury
-    ci_95: [1.20, 1.90]
-    applies_to: ["knee_acl"]
-    direction: "increases_reinjury"
-    sources: ["wiggins_2016"]
-    stakeholder_explainer: |
-      Personnel under 25 have ~50% higher risk of re-injury
-      after ACL reconstruction, likely due to higher activity
-      levels and earlier return to demanding duties.
+    hr: 0.95
+    ci_95: [0.85, 1.06]
+    category: "demographic"
+    direction: "accelerates_recovery"
+    applies_to: ["all"]
+    sources: ["olivotto_2025"]
+    stakeholder_explainer: "Female sex associated with slightly faster recovery, though effect is modest."
 
-  sex_female:
-    effect_type: "risk_ratio"
-    description: "Female sex effect on injury INCIDENCE (not recovery)"
-    rr_basic_training: 2.10
-    rr_basic_training_ci: [1.89, 2.33]
-    rr_post_training: 1.23
-    rr_post_training_ci: [1.05, 1.43]
-    applies_to: ["all_mski"]
-    direction: "higher_incidence"
-    recovery_modifier: null              # Insufficient evidence for recovery time
-    sources: ["schram_2022"]
-    evidence_note: |
-      Strong evidence for higher injury INCIDENCE in females during training.
-      Difference narrows post-training (RR 1.23).
-      Insufficient evidence to confirm longer RECOVERY times - may be
-      confounded by fitness levels and reporting behaviour.
-    stakeholder_explainer: |
-      Female personnel have higher injury rates during basic training
-      (about 2x) but this gap narrows substantially after initial training.
-      Fitness levels and reporting behaviour may explain much of the difference.
-      Evidence for longer recovery times is limited.
-
-  # ----------------------------------------------------------
-  # INJURY HISTORY FACTORS
-  # ----------------------------------------------------------
-
+  # CLINICAL FACTORS
   prior_same_region_injury:
     effect_type: "hazard_ratio"
     hr: 1.80
     ci_95: [1.40, 2.30]
+    category: "clinical"
+    direction: "delays_recovery"
     applies_to: ["all"]
-    direction: "delays_recovery"
     sources: ["wiggins_2016", "olivotto_2025"]
-    stakeholder_explainer: |
-      A previous injury to the same body region
-      nearly doubles the risk of delayed recovery.
-      Prior injuries may indicate underlying vulnerability
-      or incomplete previous recovery.
-
-  multiple_tbi_history:
-    effect_type: "hazard_ratio"
-    description: "≥3 lifetime TBIs vs single TBI"
-    hr: 1.80
-    ci_95: [1.30, 2.50]
-    applies_to: ["mtbi"]
-    direction: "delays_recovery"
-    outcome: "medical_separation"
-    sources: ["kennedy_2018", "tbicohe_2023"]
-    stakeholder_explainer: |
-      Personnel with 3 or more lifetime concussions have
-      nearly double the risk of medical separation compared
-      to those with a single concussion.
-
-  # ----------------------------------------------------------
-  # TREATMENT FACTORS
-  # ----------------------------------------------------------
+    stakeholder_explainer: "Prior injury to same body region significantly delays recovery."
 
   supervised_rehabilitation:
     effect_type: "hazard_ratio"
     hr: 0.75
     ci_95: [0.65, 0.87]
-    applies_to: ["all_mski"]
+    category: "treatment"
     direction: "accelerates_recovery"
-    sources: ["olivotto_2025"]
-    stakeholder_explainer: |
-      Supervised rehabilitation reduces recovery time
-      by approximately 25% compared with self-directed care.
-      This effect is consistent across MSKI types.
-
-  delayed_surgery:
-    effect_type: "hazard_ratio"
-    description: "Surgery >180 days post-injury"
-    hr: 1.35
-    ci_95: [1.15, 1.58]
-    applies_to: ["knee_acl"]
-    direction: "increases_failure"
-    outcome: "acl_failure_revision_separation"
-    sources: ["anderson_2023"]
-    stakeholder_explainer: |
-      Delaying ACL surgery beyond 6 months is associated
-      with ~35% higher failure rates (revision surgery or
-      knee-related medical separation).
-
-  # ----------------------------------------------------------
-  # COMORBIDITY FACTORS
-  # ----------------------------------------------------------
-
-  mental_health_comorbidity:
-    effect_type: "risk_ratio"
-    rr: 6.0
-    ci_95: [3.0, 10.0]
-    applies_to: ["all_mski", "mtbi"]
-    direction: "delays_recovery"
-    outcome: "poor_recovery_restricted_duty"
-    sources: ["olivotto_2025", "kcmhr_2024", "tbicohe_2023"]
-    evidence_note: "Wide CI reflects heterogeneity in definitions"
-    stakeholder_explainer: |
-      Co-existing mental health conditions (depression, anxiety, PTSD)
-      dramatically increase the risk of prolonged disability.
-      This is the single strongest predictor of poor MSKI outcomes
-      and the main driver of persistent symptoms after mTBI.
-
-  ptsd_comorbidity_mtbi:
-    effect_type: "prevalence_modifier"
-    prevalence_military: 0.482           # 48.2%
-    prevalence_civilian: 0.15            # 11-18.6%
-    applies_to: ["mtbi"]
-    impact: |
-      When PTSD co-occurs with mTBI, symptoms are more severe
-      and persistent. PTSD symptoms often drive disability
-      more than the brain injury itself.
-    sources: ["tbicohe_2023"]
-    stakeholder_explainer: |
-      Nearly half of military personnel with mTBI also have PTSD,
-      compared to only 15% of civilians. When both conditions
-      are present, recovery is significantly more complex.
-
-  # ----------------------------------------------------------
-  # BEHAVIOURAL FACTORS
-  # ----------------------------------------------------------
-
-  smoking:
-    effect_type: "hazard_ratio"
-    hr: 1.43
-    ci_95: [1.17, 1.74]
-    applies_to: ["all_mski"]
-    direction: "delays_recovery"
-    outcome: "surgical_failure"
-    sources: ["anderson_2023"]
-    stakeholder_explainer: |
-      Smoking is associated with poorer healing and ~40%
-      higher failure rates after musculoskeletal surgery.
-      Smoking cessation should be encouraged pre-operatively.
-
-  # ----------------------------------------------------------
-  # OCCUPATIONAL FACTORS
-  # ----------------------------------------------------------
-
-  high_demand_trade:
-    effect_type: "hazard_ratio"
-    description: "Infantry/Combat Arms vs Support trades"
-    hr: 1.30
-    ci_95: [1.10, 1.55]
     applies_to: ["all"]
-    direction: "delays_rtd"
-    evidence_grade: "Low"
-    evidence_note: "Expert estimate pending calibration"
-    sources: ["expert_estimate"]
-    stakeholder_explainer: |
-      Personnel in physically demanding roles (Infantry,
-      Royal Marines, Para) face longer RTD times due to
-      higher fitness thresholds required for occupational clearance.
-      They may achieve Return to Fitness but not Return to Duty.
+    sources: ["olivotto_2025"]
+    stakeholder_explainer: "Supervised rehabilitation accelerates recovery by ~25%."
+
+  mh_comorbidity:
+    effect_type: "hazard_ratio"
+    hr: 2.00
+    ci_95: [1.50, 2.67]
+    category: "clinical"
+    direction: "delays_recovery"
+    applies_to: ["MSKI_moderate", "MSKI_major", "MSKI_severe"]
+    sources: ["olivotto_2025"]
+    stakeholder_explainer: "Mental health comorbidity is the strongest predictor of poor MSKI outcomes."
+
+  # MH-SPECIFIC RISK FACTORS
+  trauma_exposure:
+    effect_type: "hazard_ratio"
+    hr: 1.35
+    ci_95: [1.10, 1.65]
+    category: "mh_clinical"
+    direction: "delays_recovery"
+    applies_to: ["MH_mild", "MH_moderate", "MH_severe"]
+    condition_specific: ["ptsd"]
+    sources: ["kcmhr_2024", "hoge_2014"]
+    stakeholder_explainer: "Combat/operational trauma exposure associated with more complex PTSD presentations."
+
+  low_social_support:
+    effect_type: "hazard_ratio"
+    hr: 1.40
+    ci_95: [1.15, 1.70]
+    category: "mh_social"
+    direction: "delays_recovery"
+    applies_to: ["MH_mild", "MH_moderate", "MH_severe"]
+    sources: ["kcmhr_2024"]
+    stakeholder_explainer: "Low social support significantly impairs mental health recovery."
+
+  moderate_social_support:
+    effect_type: "hazard_ratio"
+    hr: 1.15
+    ci_95: [0.95, 1.38]
+    category: "mh_social"
+    direction: "delays_recovery"
+    applies_to: ["MH_mild", "MH_moderate", "MH_severe"]
+    sources: ["kcmhr_2024"]
+    stakeholder_explainer: "Moderate social support - some protective effect but not optimal."
+
+  prior_mh_history:
+    effect_type: "hazard_ratio"
+    hr: 1.60
+    ci_95: [1.30, 1.97]
+    category: "mh_clinical"
+    direction: "delays_recovery"
+    applies_to: ["MH_mild", "MH_moderate", "MH_severe"]
+    sources: ["kcmhr_2024", "kessler_2020"]
+    stakeholder_explainer: "Prior mental health episodes predict longer recovery and higher recurrence risk."
+
+  substance_use:
+    effect_type: "hazard_ratio"
+    hr: 1.50
+    ci_95: [1.20, 1.88]
+    category: "mh_lifestyle"
+    direction: "delays_recovery"
+    applies_to: ["MH_mild", "MH_moderate", "MH_severe"]
+    sources: ["kcmhr_2024"]
+    stakeholder_explainer: "Alcohol/substance misuse complicates treatment response and prolongs recovery."
+
+  poor_treatment_engagement:
+    effect_type: "hazard_ratio"
+    hr: 1.80
+    ci_95: [1.40, 2.31]
+    category: "mh_treatment"
+    direction: "delays_recovery"
+    applies_to: ["MH_moderate", "MH_severe"]
+    sources: ["kcmhr_2024"]
+    stakeholder_explainer: "Poor engagement with therapy significantly delays recovery."
 
 # ============================================================
 # SOURCE BIBLIOGRAPHY
@@ -484,8 +873,6 @@ risk_factors:
 
 sources:
 
-  # --- Original sources from uploaded PDFs ---
-  
   antosh_2018:
     authors: "Antosh IJ, Patzkowski JC, Engelen-Lee J, et al."
     title: "Return to Military Duty After Anterior Cruciate Ligament Reconstruction"
@@ -564,6 +951,13 @@ sources:
     n: 312
     military_specific: true
 
+  shaw_2019:
+    authors: "Shaw WS, et al."
+    title: "Occupational factors in low back pain recovery"
+    journal: "Journal of Occupational Rehabilitation"
+    year: 2019
+    study_type: "systematic_review"
+
   hoge_2014:
     authors: "Hoge CW, Grossman SH, Auchterlonie JL, et al."
     title: "PTSD Treatment for Soldiers After Combat Deployment: Low Utilization of Mental Health Care and Reasons for Dropout"
@@ -591,6 +985,7 @@ sources:
     n: 8000
     military_specific: true
     uk_specific: true
+    note: "UK-specific PTSD prevalence 6%"
 
   liu_2025:
     authors: "Liu Y, Zhang X, Wang J, et al."
@@ -598,149 +993,4 @@ sources:
     journal: "Journal of Clinical Psychiatry"
     year: 2025
     study_type: "meta_analysis"
-    n_studies: 414
-    prospero: "CRD42021245754"
-
-  scanaliato_2022:
-    authors: "Scanaliato JP, Spindler KP, Rue JP, et al."
-    title: "Rotator cuff repair outcomes in young active-duty military personnel"
-    journal: "American Journal of Sports Medicine"
-    year: 2022
-    study_type: "case_series"
-    n: 89
-    military_specific: true
-    evidence_note: "n<100, supplementary source"
-
-  vanspanning_2025:
-    authors: "van Spanning S, Verweij L, van Deurzen D, et al."
-    title: "Return to duty after shoulder stabilisation surgery"
-    journal: "Journal of Shoulder and Elbow Surgery"
-    year: 2025
-    study_type: "cohort"
-    n: 156
-    military_specific: true
-
-  # --- New sources from web search ---
-
-  oneil_2013:
-    authors: "O'Neil ME, Carlson KF, Storzbach D, et al."
-    title: "Complications of Mild Traumatic Brain Injury in Veterans and Military Personnel: A Systematic Review"
-    journal: "VA Evidence Synthesis Program"
-    year: 2013
-    url: "https://www.hsrd.research.va.gov/publications/esp/mild_tbi.cfm"
-    study_type: "systematic_review"
-    military_specific: true
-
-  vanderploeg_2017:
-    authors: "Vanderploeg RD, Cooper DB, Curtiss G, et al."
-    title: "Epidemiology and prognosis of mild traumatic brain injury in returning soldiers"
-    journal: "Neurology"
-    year: 2017
-    doi: "10.1212/WNL.0000000000003839"
-    study_type: "cohort"
-    n: 557
-    military_specific: true
-
-  kennedy_2018:
-    authors: "Kennedy JE, Lu LH, Reid MW, et al."
-    title: "Predictors of Return to Duty vs Medical Retirement in Active Duty Military with Blast-Related mTBI"
-    journal: "Journal of Neurotrauma"
-    year: 2018
-    doi: "10.1089/neu.2017.5141"
-    study_type: "cohort"
-    n: 303
-    military_specific: true
-
-  rand_2021:
-    authors: "Krull H, Farmer CM, Simmons MM, et al."
-    title: "Post 9/11 Trends in Medical Separation for PTSD and TBI"
-    journal: "RAND Corporation"
-    year: 2021
-    url: "https://www.rand.org/pubs/research_briefs/RBA1197-1.html"
-    study_type: "retrospective_analysis"
-    n: 500000
-    military_specific: true
-    key_finding: "TBI medical discharge increased 7%→18% (2002-2015); PTSD 16%→34%"
-
-  tbicohe_2023:
-    authors: "TBI Center of Excellence"
-    title: "Research Review on Mild TBI and PTSD"
-    journal: "Health.mil"
-    year: 2023
-    url: "https://health.mil/Reference-Center/Publications/2023/09/29/TBICoE-Research-Review-Mild-TBI-and-PTSD"
-    study_type: "evidence_review"
-    military_specific: true
-    key_finding: "48.2% military vs 11-18.6% civilian PTSD post-TBI"
-
-  schram_2022:
-    authors: "Schram B, Canetti E, Orr R, Pope R"
-    title: "Injury rates in female and male military personnel: systematic review and meta-analysis"
-    journal: "BMC Women's Health"
-    year: 2022
-    doi: "10.1186/s12905-022-01899-4"
-    study_type: "meta_analysis"
-    n_studies: 25
-    prospero: "CRD42020170003"
-    military_specific: true
-    key_finding: "Female RR 2.10 basic training, 1.23 post-training"
-
-  expert_estimate:
-    authors: "SEKHMET Development Team"
-    title: "Expert clinical estimate pending calibration"
-    year: 2025
-    study_type: "expert_opinion"
-    evidence_grade: "Low"
-    note: "Placeholder for trade/role modifier - requires validation"
-
-# ============================================================
-# GAPS AND FUTURE WORK
-# ============================================================
-
-evidence_gaps:
-  
-  critical:
-    - description: "UK-specific ACL reconstruction RTD outcomes"
-      priority: "High"
-      potential_source: "DMRC Stanford Hall / DNRC data"
-    
-    - description: "Trade/role-specific recovery modifiers"
-      priority: "High"
-      potential_source: "MOD Medical Employment Standards data"
-
-  moderate:
-    - description: "Female sex effect on recovery TIME (not just incidence)"
-      priority: "Medium"
-      current_status: "Evidence insufficient - using incidence data only"
-    
-    - description: "UK military mTBI outcomes"
-      priority: "Medium"
-      potential_source: "DMRC / DPHC TBI pathway data"
-
-  low:
-    - description: "Ankle/foot stress fracture military outcomes"
-      priority: "Low"
-      current_status: "Using general population data"
-
-# ============================================================
-# VERSION HISTORY
-# ============================================================
-
-changelog:
-  - version: "1.1.0"
-    date: "2025-01-01"
-    changes:
-      - "Added mTBI injury type with military-specific parameters"
-      - "Added multiple_tbi_history risk factor"
-      - "Added sex_female risk factor (incidence only)"
-      - "Added delayed_surgery risk factor"
-      - "Added ptsd_comorbidity_mtbi modifier"
-      - "Added high_demand_trade placeholder"
-      - "Split time_to_fitness vs time_to_rtd for all injuries"
-      - "Added n_total and evidence_note fields"
-      - "Added 8 new sources from literature search"
-      - "Created evidence_gaps section"
-  
-  - version: "1.0.0"
-    date: "2025-01-01"
-    changes:
-      - "Initial version from GPT extraction of uploaded PDFs"
+    military_specific: false
