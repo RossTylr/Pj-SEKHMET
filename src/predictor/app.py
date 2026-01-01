@@ -686,7 +686,6 @@ def render_individual_tab():
                         st.markdown("*None significant*")
 
                     # SHAP bar chart
-                    import plotly.express as px
                     shap_df = pd.DataFrame([
                         {"Feature": k.replace('_', ' ').title(), "SHAP": v}
                         for k, v in xgb_pred.shap_values.items()
