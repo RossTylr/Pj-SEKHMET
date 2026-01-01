@@ -35,7 +35,7 @@ from models import (
 
 st.set_page_config(
     page_title="JMES Workforce Simulation",
-    page_icon="🏥",
+    page_icon="assets/images/logo.png",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -57,7 +57,8 @@ if 'config' not in st.session_state:
 
 def render_sidebar():
     """Render sidebar controls"""
-    st.sidebar.title("🏥 JMES Simulation")
+    st.sidebar.image("assets/images/logo.png", width=80)
+    st.sidebar.title("JMES Simulation")
     st.sidebar.markdown("---")
     
     # Simulation Parameters
@@ -735,7 +736,8 @@ def main():
     params = render_sidebar()
     
     # Header
-    st.title("🏥 JMES Defence Workforce Simulation")
+    st.image("assets/images/logo.png", width=100)
+    st.title("JMES Defence Workforce Simulation")
     st.markdown("""
     **Synthetic Tri-Service Dataset Generator** for JMES prediction modelling.
     

@@ -1,8 +1,6 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/sekhmet-banner-dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="assets/sekhmet-banner-light.png">
-  <img alt="SEKHMET Recovery Predictor" src="assets/sekhmet-banner.png" width="100%">
-</picture>
+<p align="center">
+  <img src="assets/images/banner.png" alt="SEKHMET Recovery Predictor" width="100%">
+</p>
 
 # SEKHMET Recovery Predictor
 
