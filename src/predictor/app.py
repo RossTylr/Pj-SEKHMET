@@ -1293,6 +1293,342 @@ def render_settings_tab():
 
 
 # ============================================================
+# TAB 4: REFERENCES (V4)
+# ============================================================
+
+def get_source_usage(source_id: str) -> list:
+    """
+    Determine what parameters this source is used for.
+    Returns list of usage descriptions.
+    """
+    usage_map = {
+        'antosh_2018': [
+            'ACL reconstruction RTD rates',
+            'Military-specific knee injury outcomes'
+        ],
+        'anderson_2023': [
+            'Military academy injury epidemiology',
+            'Age-related recovery modifiers',
+            'Smoking hazard ratio'
+        ],
+        'marquina_2024': [
+            'ACL reconstruction meta-analysis',
+            'Return to sport timelines'
+        ],
+        'rhon_2022': [
+            'Spine rehabilitation outcomes',
+            'Lower back recovery trajectories'
+        ],
+        'olivotto_2025': [
+            'MSKI prognostic factors systematic review',
+            'Risk factor hazard ratios',
+            'BMI impact on recovery'
+        ],
+        'wiggins_2016': [
+            'ACL reinjury rates',
+            'Age-related reinjury risk',
+            'Prior injury hazard ratio'
+        ],
+        'kcmhr_2024': [
+            'UK military mental health prevalence',
+            'PTSD recovery trajectories (research only)'
+        ],
+        'hoge_2014': [
+            'Military PTSD prevalence comparison',
+            'UK vs US outcomes'
+        ],
+        'shaw_2019': [
+            'Occupational factors in LBP recovery',
+            'Job modification impact'
+        ],
+    }
+    return usage_map.get(source_id, [])
+
+
+def generate_bibtex(sources: dict) -> str:
+    """Generate BibTeX format for all sources."""
+    bibtex_entries = []
+
+    for source_id, source in sources.items():
+        entry_type = 'article'
+        authors = source.get('authors', 'Unknown').replace(' and ', ' AND ')
+
+        entry = f"""@{entry_type}{{{source_id},
+    author = {{{authors}}},
+    title = {{{source.get('title', 'Untitled')}}},
+    journal = {{{source.get('journal', '')}}},
+    year = {{{source.get('year', '')}}},
+    doi = {{{source.get('doi', '')}}}
+}}"""
+        bibtex_entries.append(entry)
+
+    return "\n\n".join(bibtex_entries)
+
+
+def generate_formatted_references(sources: dict) -> str:
+    """Generate formatted reference list (Vancouver style)."""
+    lines = [
+        "SEKHMET Evidence Base - Reference List",
+        "=" * 50,
+        "",
+    ]
+
+    sorted_sources = sorted(sources.items(), key=lambda x: x[1].get('year', 0), reverse=True)
+
+    for i, (source_id, source) in enumerate(sorted_sources, 1):
+        authors = source.get('authors', 'Unknown')
+        title = source.get('title', 'Untitled')
+        journal = source.get('journal', '')
+        year = source.get('year', 'n.d.')
+        doi = source.get('doi', '')
+
+        ref = f"{i}. {authors}. {title}."
+        if journal:
+            ref += f" {journal}."
+        ref += f" {year}."
+        if doi:
+            ref += f" doi:{doi}"
+
+        lines.append(ref)
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+def render_reference_card(source_id: str, source: dict):
+    """Render a single reference as an expandable card."""
+    authors = source.get('authors', 'Unknown')
+    year = source.get('year', 'n.d.')
+    title = source.get('title', 'Untitled')
+    journal = source.get('journal', '')
+    doi = source.get('doi', '')
+
+    header = f"**{authors}** ({year})"
+
+    # Badges
+    badges = []
+    if source.get('military_specific'):
+        badges.append("🎖️ Military")
+
+    study_type = source.get('study_type', '')
+    if study_type:
+        type_icons = {
+            'meta_analysis': '📊',
+            'systematic_review': '🔍',
+            'cohort': '👥',
+            'rct': '🎲',
+            'case_control': '⚖️',
+            'cross_sectional': '📸',
+            'retrospective_cohort': '📜',
+        }
+        icon = type_icons.get(study_type, '📄')
+        badges.append(f"{icon} {study_type.replace('_', ' ').title()}")
+
+    badge_str = " | ".join(badges) if badges else ""
+
+    with st.expander(f"{header} - *{title[:60]}{'...' if len(title) > 60 else ''}*"):
+        st.markdown(f"**{authors}** ({year}). *{title}*.")
+        if journal:
+            st.markdown(f"📰 {journal}")
+        if doi:
+            st.markdown(f"🔗 [doi:{doi}](https://doi.org/{doi})")
+
+        st.caption(badge_str)
+
+        if source.get('n'):
+            st.markdown(f"**Sample size**: n = {source['n']:,}")
+
+        if source.get('note'):
+            st.info(f"📝 {source['note']}")
+
+        st.markdown("**Used for:**")
+        used_for = get_source_usage(source_id)
+        if used_for:
+            for usage in used_for:
+                st.markdown(f"• {usage}")
+        else:
+            st.caption("General evidence base calibration")
+
+
+def render_parameter_source_table():
+    """Render table showing parameter-to-source mappings."""
+    st.subheader("📋 Parameter Source Mapping")
+
+    st.markdown("This table shows which clinical parameters are derived from which sources.")
+
+    mapping_data = [
+        {'Parameter': 'ACL median recovery (moderate)', 'Value': '9 months', 'Sources': 'Antosh 2018, Marquina 2024', 'Grade': '🟡 Moderate'},
+        {'Parameter': 'Lower back median recovery (moderate)', 'Value': '6 months', 'Sources': 'Rhon 2022, Shaw 2019', 'Grade': '🟡 Moderate'},
+        {'Parameter': 'Age HR (per decade >25)', 'Value': '1.15', 'Sources': 'Anderson 2023, Wiggins 2016', 'Grade': '🟡 Moderate'},
+        {'Parameter': 'Prior injury HR', 'Value': '1.80', 'Sources': 'Wiggins 2016, Olivotto 2025', 'Grade': '🟡 Moderate'},
+        {'Parameter': 'Smoking HR', 'Value': '1.43', 'Sources': 'Anderson 2023', 'Grade': '🟡 Moderate'},
+        {'Parameter': 'Supervised rehab HR', 'Value': '0.75', 'Sources': 'Olivotto 2025', 'Grade': '🟡 Moderate'},
+        {'Parameter': 'BMI >= 30 HR', 'Value': '1.20', 'Sources': 'Olivotto 2025', 'Grade': '🟡 Moderate'},
+        {'Parameter': 'OH Risk High HR', 'Value': '1.30', 'Sources': 'Shaw 2019, Olivotto 2025', 'Grade': '🟡 Moderate'},
+    ]
+
+    df = pd.DataFrame(mapping_data)
+    st.dataframe(df, hide_index=True, use_container_width=True)
+
+
+def render_evidence_summary(sources: dict):
+    """Render evidence base summary statistics."""
+    st.subheader("Evidence Base Statistics")
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    military_count = sum(1 for s in sources.values() if s.get('military_specific'))
+    total_n = sum(s.get('n', 0) for s in sources.values())
+
+    with col1:
+        st.metric("Total Sources", len(sources))
+    with col2:
+        st.metric("Military-Specific", military_count)
+    with col3:
+        st.metric("Total Sample Size", f"{total_n:,}")
+    with col4:
+        years = [s.get('year', 0) for s in sources.values() if s.get('year')]
+        st.metric("Year Range", f"{min(years)}-{max(years)}" if years else "N/A")
+
+    st.divider()
+
+    # Study type breakdown
+    st.subheader("By Study Type")
+
+    type_counts = {}
+    for s in sources.values():
+        t = s.get('study_type', 'other')
+        type_counts[t] = type_counts.get(t, 0) + 1
+
+    type_df = pd.DataFrame([
+        {'Study Type': k.replace('_', ' ').title(), 'Count': v}
+        for k, v in sorted(type_counts.items(), key=lambda x: x[1], reverse=True)
+    ])
+
+    fig = px.pie(type_df, names='Study Type', values='Count', title='Distribution by Study Type')
+    st.plotly_chart(fig, use_container_width=True)
+
+    # Timeline
+    st.subheader("Publication Timeline")
+
+    year_counts = {}
+    for s in sources.values():
+        y = s.get('year')
+        if y:
+            year_counts[y] = year_counts.get(y, 0) + 1
+
+    if year_counts:
+        year_df = pd.DataFrame([
+            {'Year': k, 'Publications': v}
+            for k, v in sorted(year_counts.items())
+        ])
+
+        fig = px.bar(year_df, x='Year', y='Publications', title='Publications by Year')
+        st.plotly_chart(fig, use_container_width=True)
+
+    # Evidence quality
+    st.subheader("Evidence Quality Assessment")
+
+    st.markdown("""
+    | Grade | Definition | Sources |
+    |-------|------------|---------|
+    | 🟢 **High** | Multiple large RCTs, high-quality meta-analyses | Limited |
+    | 🟡 **Moderate** | Cohort studies, single RCTs, systematic reviews | Most parameters |
+    | 🔴 **Low** | Case series, expert opinion, extrapolated | Some edge cases |
+
+    **Note**: Military-specific evidence is prioritised where available.
+    Civilian data is used where military data is lacking, with appropriate
+    adjustments for occupational demands.
+    """)
+
+
+def render_reference_list(sources: dict):
+    """Render filterable reference list."""
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        study_types = ["All"] + sorted(set(s.get('study_type', 'other') for s in sources.values()))
+        selected_type = st.selectbox("Study Type", study_types)
+
+    with col2:
+        pop_filter = st.radio("Population", ["All", "Military", "Civilian"], horizontal=True)
+
+    with col3:
+        search = st.text_input("Search", placeholder="Author, title...")
+
+    # Filter
+    filtered = {}
+    for sid, s in sources.items():
+        if selected_type != "All" and s.get('study_type') != selected_type:
+            continue
+        if pop_filter == "Military" and not s.get('military_specific'):
+            continue
+        if pop_filter == "Civilian" and s.get('military_specific'):
+            continue
+        if search:
+            searchable = f"{s.get('authors','')} {s.get('title','')}".lower()
+            if search.lower() not in searchable:
+                continue
+        filtered[sid] = s
+
+    st.caption(f"Showing {len(filtered)} of {len(sources)} references")
+    st.divider()
+
+    # Display
+    for sid, s in sorted(filtered.items(), key=lambda x: x[1].get('year', 0), reverse=True):
+        render_reference_card(sid, s)
+
+    # Export
+    st.divider()
+    col1, col2 = st.columns(2)
+    with col1:
+        st.download_button(
+            "📄 Download BibTeX",
+            generate_bibtex(sources),
+            "sekhmet_references.bib"
+        )
+    with col2:
+        st.download_button(
+            "📝 Download Text",
+            generate_formatted_references(sources),
+            "sekhmet_references.txt"
+        )
+
+
+def render_references_tab():
+    """Render the References tab with full evidence base citations."""
+    st.header("📚 Evidence Base & References")
+
+    st.markdown("""
+    SEKHMET's Cox proportional hazards model is calibrated using
+    **peer-reviewed clinical literature** from military and civilian populations.
+
+    All hazard ratios, recovery timelines, and outcome probabilities
+    are traceable to specific sources listed below.
+    """)
+
+    # Load evidence
+    evidence = EvidenceBase()
+    sources = evidence._sources if hasattr(evidence, '_sources') else {}
+
+    # Sub-tabs within References
+    ref_tab1, ref_tab2, ref_tab3 = st.tabs([
+        "📖 Full Reference List",
+        "📋 Parameter Mapping",
+        "📊 Evidence Summary"
+    ])
+
+    with ref_tab1:
+        render_reference_list(sources)
+
+    with ref_tab2:
+        render_parameter_source_table()
+
+    with ref_tab3:
+        render_evidence_summary(sources)
+
+
+# ============================================================
 # MAIN APP
 # ============================================================
 
@@ -1310,20 +1646,24 @@ def main():
     Adjust configuration in the sidebar, then use the tabs below.
     """)
     
-    # Tabs
-    tab1, tab2, tab3 = st.tabs([
+    # Tabs (V4: 4 tabs with References)
+    tab1, tab2, tab3, tab4 = st.tabs([
         "🧑‍⚕️ Individual Prediction",
         "📊 Cohort Planning",
+        "📚 References",
         "⚙️ Model Settings"
     ])
-    
+
     with tab1:
         render_individual_tab()
-    
+
     with tab2:
         render_cohort_tab()
-    
+
     with tab3:
+        render_references_tab()
+
+    with tab4:
         render_settings_tab()
     
     # Footer
