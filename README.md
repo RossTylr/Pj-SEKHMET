@@ -8,8 +8,8 @@
 
 Clinical decision support tool using Cox proportional hazards modelling calibrated to peer-reviewed military and civilian literature.
 
-[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://pj-sekhmet-ckltbh5thn6walldqpr2pt.streamlit.app)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/RossTylr/Pj-SEKHMET)
+<a href="https://pj-sekhmet-ckltbh5thn6walldqpr2pt.streamlit.app"><img src="https://static.streamlit.io/badges/streamlit_badge_black_white.svg" alt="Open in Streamlit" height="28"></a>
+<a href="https://codespaces.new/RossTylr/Pj-SEKHMET"><img src="https://github.com/codespaces/badge.svg" alt="Open in GitHub Codespaces" height="28"></a>
 
 ---
 
