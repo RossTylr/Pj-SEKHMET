@@ -1740,15 +1740,17 @@ def render_validation_roadmap():
     st.dataframe(df, hide_index=True, use_container_width=True)
 
     st.info("""
-    **Current Status**: Research/demonstration phase
+    **Current Status**: Research & Demonstration Phase
 
-    The tool is appropriate for:
+    **Appropriate uses**:
+    - Workforce capacity planning and scenario analysis
+    - Operational resource allocation modelling
+    - Research demonstrations and stakeholder engagement
     - Exploring prediction model capabilities
-    - Workforce planning scenario analysis
-    - Stakeholder demonstrations
 
-    **Not yet appropriate for**:
-    - Individual clinical decisions
+    **Not yet validated for**:
+    - Individual clinical treatment decisions
+    - Fitness for duty determinations
     - Formal capacity commitments
     - Regulatory submissions
     """)
@@ -2301,7 +2303,7 @@ def main():
     
     # Footer
     st.markdown("---")
-    st.caption("SEKHMET Recovery Predictor v1.0 | Configuration is session-based")
+    st.caption("SEKHMET Recovery Predictor v2.0 | Research & Demonstration Phase | Configuration is session-based")
 
 
 if __name__ == "__main__":

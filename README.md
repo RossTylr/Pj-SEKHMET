@@ -14,7 +14,7 @@
 
 **Predict recovery trajectories for injured personnel.**
 
-Evidence-based recovery prediction tool with Cox proportional hazards modelling.
+Evidence-based recovery prediction tool with Cox proportional hazards modelling calibrated to peer-reviewed military and civilian literature.
 
 <a href="https://pj-sekhmet-ckltbh5thn6walldqpr2pt.streamlit.app"><img src="https://static.streamlit.io/badges/streamlit_badge_black_white.svg" alt="Open in Streamlit" height="28"></a>
 <a href="https://codespaces.new/RossTylr/Pj-SEKHMET"><img src="https://github.com/codespaces/badge.svg" alt="Open in GitHub Codespaces" height="28"></a>
@@ -78,7 +78,7 @@ streamlit run app.py
 
 ---
 
-## Evidence Base (v2.0.0)
+## Evidence Base
 
 The Cox model is calibrated to clinical literature including:
 - **9 peer-reviewed sources** from military and civilian populations
@@ -158,26 +158,37 @@ Pj-SEKHMET/
 
 ---
 
-## Roadmap
+## Development Status
 
-- [x] Core prediction model
-- [x] Streamlit UI with configurable bands
-- [x] Cox PH model with evidence base
-- [x] **V2: XGBoost model with SHAP explainability**
-- [x] **V2: Occupational Health risk factor (replaces Trade)**
-- [x] **V3: Traffic light summary**
-- [x] **V3: Survival curve with CI shading**
-- [x] **V3: Model agreement indicator**
-- [x] **V3: Comparator benchmark**
-- [x] **V4: References tab with full citations**
-- [x] **V4: BibTeX/text export**
-- [x] **V5: Regulatory disclaimers and governance**
-- [x] **V5: Riley framework compliance tracking**
-- [x] **V5: Calibration status and validation roadmap**
-- [x] GitHub Codespaces support
-- [ ] CSV cohort upload
-- [ ] PDF report export
-- [ ] Real data validation
+**Current Phase**: Research & Demonstration
+
+### Completed Features
+
+| Version | Feature | Status |
+|---------|---------|--------|
+| V1 | Core Cox PH prediction model | Complete |
+| V1 | Streamlit UI with configurable bands | Complete |
+| V1 | Bayesian clinician-adjustable model | Complete |
+| V2 | XGBoost model with SHAP explainability | Complete |
+| V2 | Occupational Health risk factor | Complete |
+| V3 | Traffic light RTD summary | Complete |
+| V3 | Survival curve with 90% CI | Complete |
+| V3 | Model agreement indicator | Complete |
+| V3 | Comparator benchmark | Complete |
+| V4 | References tab with full citations | Complete |
+| V4 | BibTeX/text export | Complete |
+| V5 | Regulatory disclaimers & governance | Complete |
+| V5 | Riley framework compliance tracking | Complete |
+| V5 | Calibration status & validation roadmap | Complete |
+| - | GitHub Codespaces support | Complete |
+
+### Planned Features
+
+| Feature | Status |
+|---------|--------|
+| CSV cohort upload | Planned |
+| PDF report export | Planned |
+| Real data validation | Pending data access |
 
 ---
 
