@@ -4,9 +4,17 @@
 
 # SEKHMET Recovery Predictor
 
-**Evidence-based MSKI recovery prediction for Defence workforce planning.**
+> **FOR RESEARCH/OPERATIONAL PLANNING ONLY – NOT FOR CLINICAL DIAGNOSIS**
+>
+> This tool supports workforce capacity planning and operational decision-making.
+> It is **not** a medical device and must **not** be used for individual clinical
+> diagnosis, treatment decisions, or to determine fitness for duty.
+> Clinical decisions require qualified healthcare professionals with access
+> to full patient history.
 
-Clinical decision support tool using Cox proportional hazards modelling calibrated to peer-reviewed military and civilian literature.
+**Predict recovery trajectories for injured personnel.**
+
+Evidence-based recovery prediction tool with Cox proportional hazards modelling.
 
 <a href="https://pj-sekhmet-ckltbh5thn6walldqpr2pt.streamlit.app"><img src="https://static.streamlit.io/badges/streamlit_badge_black_white.svg" alt="Open in Streamlit" height="28"></a>
 <a href="https://codespaces.new/RossTylr/Pj-SEKHMET"><img src="https://github.com/codespaces/badge.svg" alt="Open in GitHub Codespaces" height="28"></a>
@@ -163,10 +171,55 @@ Pj-SEKHMET/
 - [x] **V3: Comparator benchmark**
 - [x] **V4: References tab with full citations**
 - [x] **V4: BibTeX/text export**
+- [x] **V5: Regulatory disclaimers and governance**
+- [x] **V5: Riley framework compliance tracking**
+- [x] **V5: Calibration status and validation roadmap**
 - [x] GitHub Codespaces support
 - [ ] CSV cohort upload
 - [ ] PDF report export
 - [ ] Real data validation
+
+---
+
+## Methodological Limitations
+
+Following the [PROGRESS framework](https://prognosisresearch.com) for clinical
+prediction model research (Riley et al., BMJ 2020):
+
+| Criterion | Status | Notes |
+|-----------|--------|-------|
+| **External Validation** | Not done | No validation against real outcomes |
+| **Calibration Assessment** | Pending | Requires outcome data |
+| **Discrimination (C-statistic)** | Not calculated | Requires validation dataset |
+| **Clinical Utility** | Not assessed | No decision curve analysis |
+| **Sample Size** | Synthetic | XGBoost: n=5,000 simulated cases |
+| **Model Stability** | Variable | Cox stable; XGBoost potentially unstable |
+
+### Appropriate Use
+
+| Use Case | Appropriate? |
+|----------|--------------|
+| Workforce capacity planning | Yes |
+| Resource allocation scenarios | Yes |
+| Research demonstrations | Yes |
+| Individual clinical decisions | No |
+| Fitness assessments | No |
+
+### Path to Validation
+
+1. Obtain de-identified outcome data
+2. Perform calibration assessment (predicted vs observed)
+3. Calculate discrimination metrics (C-statistic)
+4. Conduct decision curve analysis for clinical utility
+5. External validation in independent cohort
+6. Clinical governance approval
+
+### References
+
+- Riley RD et al. (2020). "Minimum sample size for developing a multivariable
+  prediction model". BMJ. [doi:10.1136/bmj.m441](https://doi.org/10.1136/bmj.m441)
+- [prognosisresearch.com](https://prognosisresearch.com) - PROGRESS framework resources
+- [`pmsampsize`](https://github.com/cran/pmsampsize) - Sample size calculation tool
 
 ---
 

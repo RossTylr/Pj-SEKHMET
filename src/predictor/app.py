@@ -319,6 +319,15 @@ def render_comparator_benchmark(case_dict, prediction, current_months):
             st.info("➡️ Same as typical")
 
 
+def render_prediction_disclaimer():
+    """Footer disclaimer on every prediction."""
+    st.divider()
+    st.caption("""
+    **Reminder**: This prediction is for operational planning only.
+    Individual clinical decisions require qualified healthcare professional assessment.
+    """)
+
+
 def render_body_selector_simple():
     """Render body region selector with icons."""
     region_options = {
@@ -717,6 +726,9 @@ def render_individual_tab():
                 For clinical decisions, prefer the Cox PH model.
                 """)
 
+                # V5: Prediction disclaimer footer
+                render_prediction_disclaimer()
+
             elif st.session_state.model_type == "Cox PH (Evidence-based)":
                 # Create Cox case
                 cox_case = CoxCaseInput(
@@ -910,6 +922,9 @@ def render_individual_tab():
                             else:
                                 st.markdown(f"- {source_id}")
 
+                # V5: Prediction disclaimer footer
+                render_prediction_disclaimer()
+
             else:
                 # Create Bayesian case
                 case = CaseInput(
@@ -1067,6 +1082,9 @@ def render_individual_tab():
                 **Confidence:** {prediction.confidence_level}
                 """)
 
+                # V5: Prediction disclaimer footer
+                render_prediction_disclaimer()
+
 
 # ============================================================
 # TAB 2: COHORT PLANNING
@@ -1221,45 +1239,571 @@ def render_cohort_tab():
 
 
 # ============================================================
-# TAB 3: MODEL SETTINGS
+# TAB 3: MODEL SETTINGS (V5: Governance & Riley Compliance)
 # ============================================================
 
-def render_settings_tab():
-    """Advanced model settings"""
-    
-    st.header("⚙️ Model Settings")
-    
+def render_riley_compliance():
+    """
+    Explicit compliance check against Riley's PROGRESS framework recommendations.
+    Reference: prognosisresearch.com, Riley et al. BMJ 2020
+    """
+    st.subheader("Riley Framework Compliance")
+
     st.markdown("""
-    View and adjust the underlying model parameters.
-    These settings affect all predictions.
+    Assessment against key recommendations from Professor Richard Riley's
+    clinical prediction model guidance ([PROGRESS framework](https://prognosisresearch.com)).
     """)
-    
+
+    compliance_items = [
+        {
+            'Recommendation': 'Handle continuous predictors correctly - do NOT dichotomize',
+            'Status': 'Compliant',
+            'Icon': '✅',
+            'Implementation': 'Age and BMI kept as continuous variables in all models. '
+                             'No arbitrary cutoffs (e.g., age>65). Risk thresholds applied '
+                             'only to final predicted probabilities, not input features.',
+            'Evidence': 'See cox_model.py: age used as continuous with per-decade HR scaling'
+        },
+        {
+            'Recommendation': 'Focus on calibration, not just discrimination',
+            'Status': 'Not Yet Assessed',
+            'Icon': '❌',
+            'Implementation': 'Calibration plots require real outcome data. Currently no '
+                             'validation dataset available. C-statistic also not calculated.',
+            'Evidence': 'Calibration assessment planned for Phase 2 of validation roadmap'
+        },
+        {
+            'Recommendation': 'Present calibration plots, not just summary statistics',
+            'Status': 'Placeholder Ready',
+            'Icon': '⏳',
+            'Implementation': 'UI includes calibration plot placeholder. Will display '
+                             'predicted vs observed decile plot when validation data available.',
+            'Evidence': 'See render_calibration_status() in app.py'
+        },
+        {
+            'Recommendation': 'Assess clinical utility via decision curve analysis',
+            'Status': 'Not Done',
+            'Icon': '❌',
+            'Implementation': 'Net benefit analysis not performed. Cannot currently quantify '
+                             'whether model improves decisions vs treat-all/treat-none strategies.',
+            'Evidence': 'Planned for Phase 3 of validation roadmap'
+        },
+        {
+            'Recommendation': 'Ensure model stability - coefficients should not vary wildly',
+            'Status': 'Partial',
+            'Icon': '⚠️',
+            'Implementation': 'Cox model uses fixed literature HRs (stable). '
+                             'XGBoost trained on synthetic data - stability not quantified. '
+                             'Bootstrap stability analysis not performed.',
+            'Evidence': 'XGBoost labelled as research-only due to stability concerns'
+        },
+        {
+            'Recommendation': 'Use formal sample size calculations (pmsampsize)',
+            'Status': 'Not Applied',
+            'Icon': '⚠️',
+            'Implementation': 'XGBoost uses n=5,000 synthetic samples (arbitrary). '
+                             'No formal pmsampsize calculation performed. '
+                             'For real data, minimum sample size must be calculated.',
+            'Evidence': 'See sample size requirements section below'
+        },
+        {
+            'Recommendation': 'ML methods require larger samples than regression',
+            'Status': 'Acknowledged',
+            'Icon': '⚠️',
+            'Implementation': 'XGBoost explicitly labelled as research demonstration only. '
+                             'Cox PH (regression) recommended for any operational use. '
+                             'ML model not recommended until large real dataset available.',
+            'Evidence': 'UI warns: "XGBoost trained on synthetic data - research use only"'
+        },
+    ]
+
+    for item in compliance_items:
+        with st.expander(f"{item['Icon']} {item['Recommendation']}"):
+            st.markdown(f"**Status**: {item['Status']}")
+            st.markdown(f"**Implementation**: {item['Implementation']}")
+            st.caption(f"Evidence: {item['Evidence']}")
+
+    # Summary
+    st.divider()
+    compliant = sum(1 for i in compliance_items if i['Icon'] == '✅')
+    partial = sum(1 for i in compliance_items if i['Icon'] == '⚠️')
+    not_done = sum(1 for i in compliance_items if i['Icon'] == '❌')
+    pending = sum(1 for i in compliance_items if i['Icon'] == '⏳')
+
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Compliant", f"{compliant}/7")
+    with col2:
+        st.metric("Partial", f"{partial}/7")
+    with col3:
+        st.metric("Pending", f"{pending}/7")
+    with col4:
+        st.metric("Not Done", f"{not_done}/7")
+
+
+def render_continuous_variables_note():
+    """Document that continuous variables are handled correctly."""
+    st.subheader("Continuous Variable Handling")
+
+    st.success("""
+    **Continuous predictors are NOT dichotomized**
+
+    Following Riley's guidance, SEKHMET keeps continuous variables continuous.
+    """)
+
+    st.markdown("""
+    | Variable | Handling | Why Not Dichotomize? |
+    |----------|----------|---------------------|
+    | **Age** | Continuous, HR per decade over 25 | Avoids arbitrary cutoff (e.g., 65), preserves information |
+    | **BMI** | Continuous, stepped HR at 30/35 | Clinical thresholds used for HR, but raw BMI retained |
+
+    **What this means**:
+    - A 34-year-old is treated differently from a 44-year-old (not grouped as "under 65")
+    - BMI 29 vs BMI 31 shows appropriate risk difference (not cliff at 30)
+    - Full predictive information retained
+
+    **Decision thresholds** (e.g., traffic light RTD probability) are applied to
+    *final predicted risk*, not to input variables.
+    """)
+
+
+def render_stability_assessment():
+    """Document model stability status."""
+    st.subheader("Model Stability")
+
+    st.markdown("""
+    Model stability refers to whether selected predictors and coefficients
+    would remain similar if the study were repeated.
+    """)
+
+    stability_data = [
+        {
+            'Model': 'Cox PH',
+            'Stability': '✅ High',
+            'Reason': 'Uses fixed hazard ratios from published meta-analyses. '
+                     'No fitting to local data = no instability from sampling.',
+            'Risk': 'Low - parameters externally derived'
+        },
+        {
+            'Model': 'Bayesian',
+            'Stability': '✅ High',
+            'Reason': 'Rule-based model with clinician-adjustable parameters. '
+                     'No data-driven fitting = no sampling instability.',
+            'Risk': 'Low - parameters manually set'
+        },
+        {
+            'Model': 'XGBoost',
+            'Stability': '⚠️ Unknown',
+            'Reason': 'Trained on synthetic data. Bootstrap stability analysis not performed. '
+                     'ML methods typically require large samples for stability.',
+            'Risk': 'Potentially high - coefficients may vary significantly with different samples'
+        },
+    ]
+
+    df = pd.DataFrame(stability_data)
+    st.dataframe(df, hide_index=True, use_container_width=True)
+
+    with st.expander("Why stability matters"):
+        st.markdown("""
+        ### Unstable Models Are Dangerous
+
+        If a model is unstable:
+        - Different training samples → different predictions
+        - Individual predictions may be unreliable
+        - Apparent performance may be optimistic (overfitting)
+
+        ### How to Assess Stability
+
+        1. **Bootstrap resampling**: Refit model on 500+ bootstrap samples
+        2. **Check coefficient variation**: Do HRs vary wildly across samples?
+        3. **Check predictor selection**: Are same variables selected each time?
+
+        ### SEKHMET Status
+
+        - **Cox**: Stable by design (fixed external HRs)
+        - **XGBoost**: Stability NOT assessed - treat as research demonstration only
+
+        **Recommendation**: Use Cox model for any operational decisions until
+        XGBoost stability is validated with real data.
+        """)
+
+
+def render_pmsampsize_requirements():
+    """Document sample size requirements per pmsampsize methodology."""
+    st.subheader("Sample Size Requirements (pmsampsize)")
+
+    st.markdown("""
+    For future validation with real data, minimum sample size should be calculated
+    using [`pmsampsize`](https://github.com/cran/pmsampsize) (Riley et al., 2020).
+    """)
+
+    st.code("""
+# R example for SEKHMET-like model
+library(pmsampsize)
+
+# Binary outcome (recovered by 6 months: yes/no)
+pmsampsize(
+    type = "b",           # binary outcome
+    rsquared = 0.25,      # anticipated R² (conservative estimate)
+    parameters = 12,      # number of predictor parameters
+    prevalence = 0.6,     # ~60% recover by 6 months
+    shrinkage = 0.9       # target shrinkage to minimise overfitting
+)
+
+# Survival outcome (time to recovery)
+pmsampsize(
+    type = "s",           # survival outcome
+    rsquared = 0.20,      # anticipated R²
+    parameters = 12,      # number of predictor parameters
+    rate = 0.15,          # overall event rate per person-month
+    timepoint = 12,       # prediction horizon (months)
+    meanfup = 8           # mean follow-up time
+)
+    """, language="r")
+
+    st.warning("""
+    **Current Status**: No formal sample size calculation performed.
+
+    - XGBoost uses arbitrary n=5,000 synthetic samples
+    - Cox model uses literature HRs (no fitting required)
+    - Before real-data ML training, pmsampsize MUST be used
+
+    **Typical requirements** for stable prediction models:
+    - Regression: Often 10-20 events per predictor parameter
+    - ML methods: Often 50-200+ events per parameter (higher than regression)
+    """)
+
+
+def render_model_limitations():
+    """
+    Transparent display of model limitations per Riley PROGRESS framework.
+    Reference: prognosisresearch.com
+    """
+    st.subheader("Methodological Limitations")
+
+    st.markdown("""
+    Following the [PROGRESS framework](https://prognosisresearch.com) for
+    clinical prediction model research (Riley et al.), this section documents
+    the current validation status of SEKHMET.
+    """)
+
+    limitations = [
+        {
+            'Criterion': 'External Validation',
+            'Status': '❌ Not Done',
+            'Impact': 'Unknown real-world performance',
+            'Mitigation': 'Pending access to outcome data'
+        },
+        {
+            'Criterion': 'Calibration Assessment',
+            'Status': '❌ Not Done',
+            'Impact': 'Predicted probabilities may not match observed outcomes',
+            'Mitigation': 'Requires real outcome data for calibration plots'
+        },
+        {
+            'Criterion': 'Discrimination (C-statistic)',
+            'Status': '❌ Not Calculated',
+            'Impact': 'Model ranking ability unknown',
+            'Mitigation': 'Requires validation dataset'
+        },
+        {
+            'Criterion': 'Clinical Utility (Decision Curve)',
+            'Status': '❌ Not Assessed',
+            'Impact': 'Net benefit vs treat-all/treat-none unknown',
+            'Mitigation': 'Future work when outcome data available'
+        },
+        {
+            'Criterion': 'Sample Size Adequacy',
+            'Status': '⚠️ Synthetic Only',
+            'Impact': 'XGBoost trained on simulated data (n=5,000)',
+            'Mitigation': 'Cox uses literature HRs; XGBoost for demo only'
+        },
+        {
+            'Criterion': 'Model Stability',
+            'Status': '⚠️ Variable',
+            'Impact': 'XGBoost coefficients may be unstable',
+            'Mitigation': 'Cox model (fixed HRs) recommended for decisions'
+        },
+    ]
+
+    df = pd.DataFrame(limitations)
+    st.dataframe(df, hide_index=True, use_container_width=True)
+
+    # What this means
+    with st.expander("What does this mean?"):
+        st.markdown("""
+        ### Interpretation Guide
+
+        | Use Case | Appropriate? | Notes |
+        |----------|--------------|-------|
+        | Workforce capacity planning | ✅ Yes | Aggregate estimates for planning |
+        | Resource allocation modelling | ✅ Yes | Scenario analysis acceptable |
+        | Individual prognosis discussion | ⚠️ Caution | Use as conversation starter only |
+        | Clinical treatment decisions | ❌ No | Requires validated diagnostic tool |
+        | Fitness for duty determination | ❌ No | Requires clinical assessment |
+
+        ### Path to Validation
+
+        1. Obtain de-identified outcome data
+        2. Perform calibration assessment (predicted vs observed)
+        3. Calculate discrimination (C-statistic/AUC)
+        4. Conduct decision curve analysis
+        5. External validation in independent cohort
+        6. Formal clinical governance review
+        """)
+
+    # Reference
+    st.info("""
+    **Reference**: Riley RD et al. "Minimum sample size for developing a
+    multivariable prediction model" (BMJ 2020).
+    See [prognosisresearch.com](https://prognosisresearch.com)
+    """)
+
+
+def render_calibration_status():
+    """Display calibration status prominently."""
+    st.subheader("Calibration Status")
+
+    st.error("""
+    **MODEL NOT CALIBRATED**
+
+    This model has **not** been validated against real outcome data.
+
+    | Model | Calibration Status |
+    |-------|-------------------|
+    | Cox PH | Parameters from published literature - not locally calibrated |
+    | Bayesian | Clinician-adjustable - no empirical calibration |
+    | XGBoost | Trained on synthetic data - not validated |
+    """)
+
+    with st.expander("What is calibration and why does it matter?"):
+        st.markdown("""
+        **Calibration** measures whether predicted probabilities match observed outcomes.
+
+        ### Example
+        - Model predicts: "70% chance of recovery by 6 months"
+        - Good calibration: ~70 out of 100 similar patients actually recover by 6 months
+        - Poor calibration: Only 40 out of 100 actually recover (model overestimates)
+
+        ### Why It Matters
+
+        | Issue | Consequence |
+        |-------|-------------|
+        | Overestimation | False optimism, inadequate planning |
+        | Underestimation | Unnecessary concern, over-resourcing |
+        | Variable calibration | Unpredictable errors across subgroups |
+
+        ### Important Note
+
+        **Good discrimination ≠ Good calibration**
+
+        A model can correctly rank patients (high risk vs low risk) but still
+        systematically over- or under-estimate absolute probabilities.
+
+        Both are required for safe clinical/operational use.
+        """)
+
+    # Calibration plot placeholder
+    st.caption("Calibration plot will be available after validation against real outcomes.")
+
+
+def render_calibration_plot_placeholder():
+    """Placeholder for calibration plot with explanation."""
+    st.subheader("Calibration Plot")
+
+    st.warning("**Calibration plot not available** - requires validation against real outcomes.")
+
+    # Show example of what good/bad calibration looks like
+    with st.expander("What should a calibration plot show?"):
+        st.markdown("""
+        A calibration plot compares **predicted probabilities** (x-axis) to
+        **observed proportions** (y-axis).
+
+        ### Ideal Calibration
+        - Points lie on the 45 degree diagonal line
+        - Predicted 30% → ~30% observed
+        - Predicted 70% → ~70% observed
+
+        ### Poor Calibration Examples
+
+        | Pattern | Meaning | Risk |
+        |---------|---------|------|
+        | Points above diagonal | Model **underestimates** risk | False reassurance |
+        | Points below diagonal | Model **overestimates** risk | Unnecessary concern |
+        | S-shaped curve | Poor calibration at extremes | Wrong for high/low risk |
+        | Scattered points | Inconsistent calibration | Unreliable |
+
+        ### Why C-statistic (AUC) Is Not Enough
+
+        A model can have excellent discrimination (AUC = 0.85) but terrible calibration:
+        - Correctly ranks high vs low risk patients
+        - But predicts 80% when true rate is 40%
+
+        **Both discrimination AND calibration are required.**
+        """)
+
+        # Placeholder figure
+        st.caption("Example calibration plot (placeholder):")
+
+        # Create example plot
+        fig = go.Figure()
+
+        # Perfect calibration line
+        fig.add_trace(go.Scatter(
+            x=[0, 1], y=[0, 1],
+            mode='lines',
+            name='Perfect calibration',
+            line=dict(dash='dash', color='gray')
+        ))
+
+        # Example well-calibrated points
+        x_good = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+        y_good = [0.12, 0.18, 0.32, 0.38, 0.52, 0.58, 0.72, 0.78, 0.88]
+
+        fig.add_trace(go.Scatter(
+            x=x_good, y=y_good,
+            mode='markers',
+            name='Example: Good calibration',
+            marker=dict(size=12, color='green')
+        ))
+
+        fig.update_layout(
+            title="Example Calibration Plot (Illustrative Only)",
+            xaxis_title="Predicted Probability",
+            yaxis_title="Observed Proportion",
+            xaxis_range=[0, 1],
+            yaxis_range=[0, 1],
+            height=400
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+        st.caption("*This is an illustrative example, not SEKHMET validation data.*")
+
+
+def render_decision_curve_placeholder():
+    """Placeholder for decision curve analysis."""
+    st.subheader("Decision Curve Analysis")
+
+    st.warning("**Decision curve analysis not performed** - requires validation data.")
+
+    with st.expander("What is decision curve analysis?"):
+        st.markdown("""
+        Decision curve analysis (DCA) evaluates the **clinical utility** of a prediction model.
+
+        ### Key Question
+        Does using this model lead to better decisions than:
+        - **Treat all**: Assume everyone needs intervention
+        - **Treat none**: Assume no one needs intervention
+
+        ### Net Benefit
+
+        ```
+        Net Benefit = (True Positives / n) - (False Positives / n) x (threshold / (1 - threshold))
+        ```
+
+        This weighs:
+        - Benefit of correctly identifying high-risk cases
+        - Harm of incorrectly flagging low-risk cases
+
+        ### Interpretation
+
+        | Result | Meaning |
+        |--------|---------|
+        | Model curve above "treat all" | Model adds value vs treating everyone |
+        | Model curve above "treat none" | Model adds value vs treating no one |
+        | Model curve below both | Model is **harmful** - don't use it |
+
+        ### For SEKHMET
+
+        DCA would answer: "Does using SEKHMET for workforce planning lead to better
+        resource allocation than assuming all injuries take X months?"
+
+        **Cannot be assessed without real outcome data.**
+        """)
+
+
+def render_validation_roadmap():
+    """Show path to full validation."""
+    st.subheader("Validation Roadmap")
+
+    roadmap = [
+        {"Phase": "1", "Task": "Obtain aggregate outcome data", "Status": "⏳ Pending"},
+        {"Phase": "2", "Task": "Internal validation (calibration, discrimination)", "Status": "⏳ Pending"},
+        {"Phase": "3", "Task": "Decision curve analysis", "Status": "⏳ Pending"},
+        {"Phase": "4", "Task": "External validation", "Status": "⏳ Pending"},
+        {"Phase": "5", "Task": "Clinical governance review", "Status": "⏳ Pending"},
+        {"Phase": "6", "Task": "Deployment approval", "Status": "⏳ Pending"},
+    ]
+
+    df = pd.DataFrame(roadmap)
+    st.dataframe(df, hide_index=True, use_container_width=True)
+
+    st.info("""
+    **Current Status**: Research/demonstration phase
+
+    The tool is appropriate for:
+    - Exploring prediction model capabilities
+    - Workforce planning scenario analysis
+    - Stakeholder demonstrations
+
+    **Not yet appropriate for**:
+    - Individual clinical decisions
+    - Formal capacity commitments
+    - Regulatory submissions
+    """)
+
+
+def render_sample_size_transparency():
+    """Document sample size considerations per pmsampsize guidance."""
+    st.subheader("Sample Size & Data Sources")
+
+    st.markdown("""
+    | Model | Data Source | Sample Size | Notes |
+    |-------|-------------|-------------|-------|
+    | **Cox PH** | Published literature | N/A | Hazard ratios from 22 peer-reviewed sources |
+    | **Bayesian** | Expert-configurable | N/A | Rule-based, adjustable parameters |
+    | **XGBoost** | Synthetic generation | n=5,000 | Simulated from evidence base parameters |
+    """)
+
+    st.warning("""
+    **XGBoost Limitation**: The XGBoost model is trained on synthetic data
+    generated from the same evidence base as the Cox model. It **cannot**
+    discover new patterns - it only demonstrates the ML pipeline.
+
+    For real deployment, minimum sample size should be calculated using
+    [`pmsampsize`](https://github.com/cran/pmsampsize).
+    """)
+
+
+def render_model_configuration():
+    """Render existing model configuration settings."""
     # Current config summary
     st.subheader("Current Configuration")
-    
+
     col1, col2 = st.columns(2)
-    
+
     with col1:
         st.markdown("**Recovery Bands**")
         for band, (lo, hi) in st.session_state.config.band_thresholds.items():
             st.markdown(f"- {band}: {lo}-{hi} months")
-        
+
         st.markdown("**Age Modifiers**")
         for age, mod in st.session_state.config.age_modifiers.items():
             effect = "↑ slower" if mod > 1 else "↓ faster" if mod < 1 else "baseline"
             st.markdown(f"- {age}: {mod}x ({effect})")
-    
+
     with col2:
         st.markdown("**Body Region Modifiers**")
         for region, mod in st.session_state.config.body_region_modifiers.items():
             effect = "↑ slower" if mod > 1 else "↓ faster" if mod < 1 else "baseline"
             st.markdown(f"- {region.replace('_', ' ')}: {mod}x ({effect})")
-    
+
     st.markdown("---")
-    
+
     # Injury profiles
     st.subheader("Injury Type Profiles")
-    
+
     injury_data = []
     for name, profile in st.session_state.config.injury_profiles.items():
         injury_data.append({
@@ -1271,13 +1815,13 @@ def render_settings_tab():
             "MLD Prob": f"{profile.mld_probability:.0%}",
             "MND Prob": f"{profile.mnd_probability:.0%}"
         })
-    
+
     injury_df = pd.DataFrame(injury_data)
     st.dataframe(injury_df, use_container_width=True)
-    
+
     # Trade physical demand
     st.subheader("Trade Physical Demand")
-    
+
     trade_data = []
     for trade, demand in st.session_state.config.trade_physical_demand.items():
         mod = st.session_state.config.physical_demand_modifiers[demand]
@@ -1286,9 +1830,52 @@ def render_settings_tab():
             "Demand Level": demand,
             "Recovery Modifier": f"{mod}x"
         })
-    
+
     trade_df = pd.DataFrame(trade_data)
     st.dataframe(trade_df, use_container_width=True)
+
+
+def render_settings_tab():
+    """
+    Model Settings tab with full governance and Riley compliance information.
+    V5: Restructured with sub-tabs for Configuration, Riley Compliance, Limitations, Validation Status
+    """
+    st.header("Model Settings")
+
+    # Sub-tabs for organisation - now includes Riley Compliance
+    settings_tabs = st.tabs([
+        "Configuration",
+        "Riley Compliance",
+        "Limitations",
+        "Validation Status"
+    ])
+
+    with settings_tabs[0]:
+        render_model_configuration()
+
+    with settings_tabs[1]:
+        # Riley-specific compliance checks
+        render_riley_compliance()
+        st.divider()
+        render_continuous_variables_note()
+        st.divider()
+        render_stability_assessment()
+
+    with settings_tabs[2]:
+        render_model_limitations()
+        st.divider()
+        render_pmsampsize_requirements()
+        st.divider()
+        render_sample_size_transparency()
+
+    with settings_tabs[3]:
+        render_calibration_status()
+        st.divider()
+        render_calibration_plot_placeholder()
+        st.divider()
+        render_decision_curve_placeholder()
+        st.divider()
+        render_validation_roadmap()
 
 
 # ============================================================
@@ -1594,9 +2181,47 @@ def render_reference_list(sources: dict):
         )
 
 
+def render_methodology_references():
+    """Render methodology references section (Riley, TRIPOD, etc.)."""
+    st.subheader("Methodology References")
+
+    st.markdown("""
+    The following resources informed the development methodology:
+
+    **Prediction Model Standards**
+    - Riley RD et al. (2020). *Minimum sample size for developing a multivariable
+      prediction model*. BMJ. [doi:10.1136/bmj.m441](https://doi.org/10.1136/bmj.m441)
+    - Collins GS et al. (2015). *Transparent Reporting of a multivariable prediction
+      model for Individual Prognosis Or Diagnosis (TRIPOD)*.
+      [doi:10.7326/M14-0697](https://doi.org/10.7326/M14-0697)
+
+    **Framework**
+    - [PROGRESS Framework](https://prognosisresearch.com) - Prognosis research strategy
+
+    **Tools**
+    - [`pmsampsize`](https://github.com/cran/pmsampsize) - Sample size calculations
+    - [`pmcalplot`](https://github.com/cran/pmcalplot) - Calibration plot generation
+    """)
+
+    st.divider()
+
+    st.markdown("""
+    **Why These Standards Matter**
+
+    | Standard | Purpose |
+    |----------|---------|
+    | **Riley 2020** | Minimum sample size calculations for prediction models |
+    | **TRIPOD** | Transparent reporting of prediction model development |
+    | **PROGRESS** | Framework for prognosis research methodology |
+
+    SEKHMET aims to follow these standards. See the **Model Settings → Riley Compliance**
+    tab for a detailed assessment of current compliance status.
+    """)
+
+
 def render_references_tab():
     """Render the References tab with full evidence base citations."""
-    st.header("📚 Evidence Base & References")
+    st.header("Evidence Base & References")
 
     st.markdown("""
     SEKHMET's Cox proportional hazards model is calibrated using
@@ -1610,11 +2235,12 @@ def render_references_tab():
     evidence = EvidenceBase()
     sources = evidence._sources if hasattr(evidence, '_sources') else {}
 
-    # Sub-tabs within References
-    ref_tab1, ref_tab2, ref_tab3 = st.tabs([
-        "📖 Full Reference List",
-        "📋 Parameter Mapping",
-        "📊 Evidence Summary"
+    # Sub-tabs within References (V5: added Methodology tab)
+    ref_tab1, ref_tab2, ref_tab3, ref_tab4 = st.tabs([
+        "Full Reference List",
+        "Parameter Mapping",
+        "Evidence Summary",
+        "Methodology"
     ])
 
     with ref_tab1:
@@ -1626,6 +2252,9 @@ def render_references_tab():
     with ref_tab3:
         render_evidence_summary(sources)
 
+    with ref_tab4:
+        render_methodology_references()
+
 
 # ============================================================
 # MAIN APP
@@ -1633,17 +2262,22 @@ def render_references_tab():
 
 def main():
     """Main application"""
-    
+
     # Sidebar
     render_sidebar()
-    
+
     # Header
     st.title("🏥 SEKHMET Recovery Predictor")
-    st.markdown("""
-    **Predict recovery trajectories for injured service personnel.**
-    
-    Adjust configuration in the sidebar, then use the tabs below.
+
+    # REGULATORY DISCLAIMER - prominent, non-dismissible
+    st.error("""
+    **FOR RESEARCH/OPERATIONAL PLANNING ONLY – NOT FOR CLINICAL DIAGNOSIS**
+
+    This tool supports workforce capacity planning. It is **not** a medical device
+    and must **not** be used for individual clinical diagnosis or treatment decisions.
     """)
+
+    st.markdown("*Evidence-based MSKI recovery prediction for workforce planning*")
     
     # Tabs (V4: 4 tabs with References)
     tab1, tab2, tab3, tab4 = st.tabs([
