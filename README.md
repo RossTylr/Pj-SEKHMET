@@ -16,7 +16,7 @@
 
 Evidence-based recovery prediction tool with Cox proportional hazards modelling calibrated to peer-reviewed military and civilian literature.
 
-<a href="https://pj-sekhmet-ckltbh5thn6walldqpr2pt.streamlit.app"><img src="https://static.streamlit.io/badges/streamlit_badge_black_white.svg" alt="Open in Streamlit" height="28"></a>
+<a href="https://pj-sekhmet.streamlit.app"><img src="https://static.streamlit.io/badges/streamlit_badge_black_white.svg" alt="Open in Streamlit" height="28"></a>
 <a href="https://codespaces.new/RossTylr/Pj-SEKHMET"><img src="https://github.com/codespaces/badge.svg" alt="Open in GitHub Codespaces" height="28"></a>
 
 ---
