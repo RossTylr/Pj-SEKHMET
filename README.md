@@ -23,7 +23,7 @@ Evidence-based recovery prediction tool with Cox proportional hazards modelling 
 
 ## Live App
 
-**[Open SEKHMET Recovery Predictor](https://pj-sekhmet-ckltbh5thn6walldqpr2pt.streamlit.app)** - No installation required!
+**[Open SEKHMET Recovery Predictor](https://pj-sekhmet.streamlit.app)** - No installation required!
 
 ---
 
